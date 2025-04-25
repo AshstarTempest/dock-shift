@@ -54,18 +54,22 @@ const Header = () => {
 
   return (
     <header
-      className={`main-header sticky-header ${scrolled ? 'scrolled' : ''}`}
+      className={`main-header sticky-header dockshift-header ${
+        scrolled ? 'scrolled' : ''
+      }`}
     >
       <div className="header-content">
         <div className="logo-area">
           <Link to="/" className="logo-link">
-            <div className="logo-circle gradient-logo">CY</div>
+            <div className="dockshift-header-logo">
+              <img src="/images/Component 1.png" alt="DockShift" />
+            </div>
           </Link>
           <div className="brand-group">
             <Link to="/" className="logo-text-link">
-              <span className="brand-title">ContainerYard</span>
+              <span className="brand-title">DockShift</span>
             </Link>
-            <span className="brand-tagline">Management System</span>
+            <span className="brand-tagline">Container Yard Management</span>
           </div>
         </div>
 
@@ -316,10 +320,13 @@ const Header = () => {
           ) : (
             /* Login/Register buttons - only shown when logged out */
             <div className="auth-buttons">
-              <Link to="/login" className="btn btn-outline">
+              <Link
+                to="/login"
+                className="btn btn-outline dockshift-btn-outline"
+              >
                 Log In
               </Link>
-              <Link to="/register" className="btn btn-primary">
+              <Link to="/register" className="btn btn-danger">
                 Sign Up
               </Link>
             </div>
