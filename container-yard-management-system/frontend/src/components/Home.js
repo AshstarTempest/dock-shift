@@ -46,23 +46,30 @@ const Home = () => {
   ];
 
   return (
-    <div className="app-container">
+    <div className="app-container dockshift-theme">
       <Header />
 
       <div className="home-wrapper">
-        {/* Hero Section with Glass Morphism Effect */}
-        <section className="hero-section">
+        {/* Hero Section with DockShift Branding */}
+        <section className="dockshift-hero">
+          <div className="dockshift-logo-container">
+            <div className="dockshift-logo">
+              <img
+                src="/images/Component 1.png"
+                alt="DockShift Logo"
+                className="dockshift-logo-img"
+              />
+            </div>
+          </div>
           <div className="hero-content">
-            <h1 className="hero-title">Container Yard Management System</h1>
-            <p className="hero-description">
-              Enterprise-grade solution that transforms container yard
-              operations with real-time tracking, intelligent space allocation,
-              and automated workflow optimization.
+            <h1 className="dockshift-title">DockShift</h1>
+            <p className="dockshift-tagline">
+              Revolutionary Container Yard Management System
             </p>
-            <div className="hero-buttons">
+            <div className="dockshift-buttons">
               <Link
                 to="/register"
-                className="btn btn-primary btn-large btn-icon"
+                className="btn btn-danger btn-large btn-icon"
               >
                 Get Started
                 <svg
@@ -88,163 +95,143 @@ const Home = () => {
                   />
                 </svg>
               </Link>
-              <Link to="/demo" className="btn btn-outline btn-large">
-                Watch Demo
-              </Link>
-            </div>
-          </div>
-          <div className="hero-illustration">
-            <div className="illustration-wrapper">
-              <img
-                src="https://via.placeholder.com/600x400?text=Container+Yard+Illustration"
-                alt="Container Yard Management"
-                className="hero-image"
-              />
             </div>
           </div>
         </section>
 
-        {/* Metrics Section */}
-        <section className="metrics-section">
-          <div className="metrics-container">
-            {metrics.map((metric, index) => (
-              <div className="metric-card hover-lift" key={index}>
-                <span className="metric-number">{metric.number}</span>
-                <span className="metric-label">{metric.label}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Featured Problems Section */}
-        <section className="problems-section">
+        {/* About DockShift Section */}
+        <section className="about-dockshift">
           <div className="section-header">
-            <h2>The Container Yard Challenge</h2>
+            <h2>About DockShift</h2>
+          </div>
+
+          <div className="about-content">
+            <div className="about-image">
+              {/* We'll use a placeholder image for now */}
+              <div className="image-placeholder">
+                <div className="image-overlay">
+                  <h3 className="overlay-quote">
+                    I don't want my legacy to be Storage containers of Stuff
+                  </h3>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Problem Statement Section */}
+        <section className="problem-statement">
+          <div className="section-header">
+            <h2>Problem Statement</h2>
+          </div>
+
+          <div className="problem-content">
+            <p className="problem-text">
+              Container yards are critical to global logistics operations,
+              managing container storage and transfer across transportation
+              modes. However, traditional methods—often manual or minimally
+              automated—create inefficiencies that increase costs and delay
+              operations. The solution should include real-time tracking, smart
+              stacking, optimized traffic management, and predictive analytics
+              to enhance yard operations
+            </p>
+          </div>
+        </section>
+
+        {/* Container Management Section */}
+        <section className="container-management">
+          <div className="section-header">
+            <h2>Container Management</h2>
             <p className="section-description">
-              Modern container yards face complex logistics challenges that
-              traditional management methods cannot efficiently solve
+              Monitor and manage every container with detailed tracking and
+              status information
             </p>
           </div>
 
-          <div className="challenges-grid">
-            <div className="challenge-card hover-card">
-              <div className="challenge-icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
-                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
-                  <line x1="6" y1="6" x2="6.01" y2="6"></line>
-                  <line x1="6" y1="18" x2="6.01" y2="18"></line>
-                </svg>
+          <div className="container-cards">
+            {featuredContainers.map((container) => (
+              <div
+                key={container.id}
+                className={`container-card priority-${container.priority}`}
+              >
+                <div className="container-header">
+                  <h3>{container.id}</h3>
+                  <span
+                    className={`container-status ${container.status
+                      .toLowerCase()
+                      .replace(/\s+/g, '-')}`}
+                  >
+                    {container.status}
+                  </span>
+                </div>
+                <div className="container-body">
+                  <div className="container-detail">
+                    <span className="detail-label">Type:</span>
+                    <span className="detail-value">{container.type}</span>
+                  </div>
+                  <div className="container-detail">
+                    <span className="detail-label">Location:</span>
+                    <span className="detail-value">{container.location}</span>
+                  </div>
+                  <div className="container-detail">
+                    <span className="detail-label">Arrival:</span>
+                    <span className="detail-value">
+                      {new Date(container.arrivalDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="container-detail">
+                    <span className="detail-label">Departure:</span>
+                    <span className="detail-value">
+                      {new Date(container.departureDate).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="container-detail">
+                    <span className="detail-label">Contents:</span>
+                    <span className="detail-value">{container.contents}</span>
+                  </div>
+                </div>
+                <div className="container-footer">
+                  <button className="btn btn-small">View Details</button>
+                  <button className="btn btn-small btn-outline">
+                    Update Status
+                  </button>
+                </div>
               </div>
-              <h3>Container Tracking</h3>
-              <p>
-                Manually tracking thousands of containers across a yard leads to
-                errors, misplacements, and inefficiency in yard operations
-              </p>
-            </div>
+            ))}
+          </div>
 
-            <div className="challenge-card hover-card">
-              <div className="challenge-icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-              </div>
-              <h3>Resource Allocation</h3>
-              <p>
-                Suboptimal resource allocation leads to bottlenecks, extended
-                wait times, and significantly reduced operational throughput
-              </p>
-            </div>
-
-            <div className="challenge-card hover-card">
-              <div className="challenge-icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-              </div>
-              <h3>Processing Delays</h3>
-              <p>
-                Paper-based processes and disconnected systems cause significant
-                delays in processing arrivals and departures
-              </p>
-            </div>
-
-            <div className="challenge-card hover-card">
-              <div className="challenge-icon">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="32"
-                  height="32"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-              </div>
-              <h3>Space Optimization</h3>
-              <p>
-                Ineffective space utilization reduces yard capacity and
-                significantly increases overall operational costs
-              </p>
-            </div>
+          <div className="view-all-container">
+            <Link to="/containers" className="btn btn-danger btn-icon">
+              View All Containers
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </Link>
           </div>
         </section>
 
         {/* Solutions Section */}
-        <section className="solutions-section">
+        <section className="dockshift-solutions">
           <div className="section-header">
-            <h2>Enterprise Solution</h2>
+            <h2>Our Solutions</h2>
             <p className="section-description">
-              Our comprehensive management platform brings visibility,
+              DockShift's comprehensive management platform brings visibility,
               efficiency, and automation to container yard operations
             </p>
           </div>
 
           <div className="solutions-content">
-            <div className="solutions-image">
-              <img
-                src="https://via.placeholder.com/600x400?text=Dashboard+Preview"
-                alt="System Dashboard"
-              />
-            </div>
-
             <div className="solutions-features">
               <div className="feature-item">
                 <div className="feature-icon">
@@ -345,10 +332,10 @@ const Home = () => {
                   </svg>
                 </div>
                 <div className="feature-text">
-                  <h3>Compliance Management</h3>
+                  <h3>Traffic Optimization</h3>
                   <p>
-                    Automated document processing that ensures regulatory
-                    compliance and reduces paperwork
+                    Smart routing and queuing systems that minimize congestion
+                    and maximize equipment utilization
                   </p>
                 </div>
               </div>
@@ -356,192 +343,41 @@ const Home = () => {
           </div>
         </section>
 
-        {/* Featured Containers Section */}
-        <section className="containers-section">
-          <div className="section-header">
-            <h2>Container Management</h2>
-            <p className="section-description">
-              Monitor and manage every container with detailed tracking and
-              status information
-            </p>
-          </div>
-
-          <div className="container-cards">
-            {featuredContainers.map((container) => (
-              <div
-                key={container.id}
-                className={`container-card priority-${container.priority}`}
-              >
-                <div className="container-header">
-                  <h3>{container.id}</h3>
-                  <span
-                    className={`container-status ${container.status
-                      .toLowerCase()
-                      .replace(/\s+/g, '-')}`}
-                  >
-                    {container.status}
-                  </span>
-                </div>
-                <div className="container-body">
-                  <div className="container-detail">
-                    <span className="detail-label">Type:</span>
-                    <span className="detail-value">{container.type}</span>
-                  </div>
-                  <div className="container-detail">
-                    <span className="detail-label">Location:</span>
-                    <span className="detail-value">{container.location}</span>
-                  </div>
-                  <div className="container-detail">
-                    <span className="detail-label">Arrival:</span>
-                    <span className="detail-value">
-                      {new Date(container.arrivalDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="container-detail">
-                    <span className="detail-label">Departure:</span>
-                    <span className="detail-value">
-                      {new Date(container.departureDate).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="container-detail">
-                    <span className="detail-label">Contents:</span>
-                    <span className="detail-value">{container.contents}</span>
-                  </div>
-                </div>
-                <div className="container-footer">
-                  <button className="btn btn-small">View Details</button>
-                  <button className="btn btn-small btn-outline">
-                    Update Status
-                  </button>
-                </div>
+        {/* Metrics Section - if needed */}
+        <section className="metrics-section">
+          <div className="metrics-container">
+            {metrics.map((metric, index) => (
+              <div className="metric-card dockshift-metric" key={index}>
+                <span className="metric-number">{metric.number}</span>
+                <span className="metric-label">{metric.label}</span>
               </div>
             ))}
-          </div>
-
-          <div className="view-all-container">
-            <Link to="/containers" className="btn btn-primary btn-icon">
-              View All Containers
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-                <polyline points="12 5 19 12 12 19"></polyline>
-              </svg>
-            </Link>
-          </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className="testimonials-section">
-          <div className="section-header">
-            <h2>What Our Clients Say</h2>
-            <p className="section-description">
-              Trusted by leading logistics and shipping companies worldwide
-            </p>
-          </div>
-
-          <div className="testimonials-container">
-            <div className="testimonial-card hover-lift">
-              <div className="testimonial-content">
-                <svg
-                  className="quote-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="42"
-                  height="42"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M10 11h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M21 11h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M10 22h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M21 22h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                </svg>
-                <p>
-                  "This system has revolutionized our yard operations. We've
-                  reduced container location times by 75% and increased our
-                  daily throughput substantially."
-                </p>
-              </div>
-              <div className="testimonial-author">
-                <div className="author-avatar">JD</div>
-                <div className="author-info">
-                  <h4>John Doe</h4>
-                  <p>Operations Director, Global Shipping Co.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="testimonial-card hover-lift">
-              <div className="testimonial-content">
-                <svg
-                  className="quote-icon"
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="42"
-                  height="42"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M10 11h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M21 11h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M10 22h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                  <path d="M21 22h-4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1z"></path>
-                </svg>
-                <p>
-                  "The analytics capabilities have given us valuable insights
-                  into our operations, helping us identify and eliminate
-                  inefficiencies we weren't even aware of."
-                </p>
-              </div>
-              <div className="testimonial-author">
-                <div className="author-avatar">AS</div>
-                <div className="author-info">
-                  <h4>Alice Smith</h4>
-                  <p>CEO, Logistics Express</p>
-                </div>
-              </div>
-            </div>
           </div>
         </section>
 
         {/* CTA Section */}
-        <section className="cta-section">
+        <section className="dockshift-cta">
           <div className="cta-content">
-            <h2>Ready to optimize your container yard?</h2>
+            <h2>Ready to transform your container yard operations?</h2>
             <p>
-              Join industry leaders and transform your yard operations with our
-              enterprise solution
+              Join industry leaders using DockShift to optimize their logistics
             </p>
-            <Link to="/register" className="btn btn-primary btn-large">
-              Start Free 30-Day Trial
+            <Link to="/register" className="btn btn-danger btn-large">
+              Start Free Trial
             </Link>
-            <span className="no-credit-card">No credit card required</span>
           </div>
         </section>
 
         {/* Footer */}
-        <footer className="main-footer">
+        <footer className="dockshift-footer">
           <div className="footer-content">
             <div className="footer-brand">
-              <div className="logo-circle gradient-logo">CY</div>
+              <div className="dockshift-logo-small">
+                <img src="/images/Component 1.png" alt="DockShift" />
+              </div>
               <div className="brand-group">
-                <span className="brand-title">ContainerYard</span>
-                <span className="brand-tagline">Management System</span>
+                <span className="brand-title">DockShift</span>
+                <span className="brand-tagline">Container Yard Management</span>
               </div>
             </div>
 
@@ -619,8 +455,7 @@ const Home = () => {
 
           <div className="footer-bottom">
             <p>
-              &copy; {new Date().getFullYear()} ContainerYard Management System.
-              All rights reserved.
+              &copy; {new Date().getFullYear()} DockShift. All rights reserved.
             </p>
             <div className="social-icons">
               <a
