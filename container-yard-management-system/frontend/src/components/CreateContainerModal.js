@@ -8,8 +8,10 @@ import {
   InputGroup,
   Tabs,
   Tab,
+  Alert,
+  Badge,
 } from 'react-bootstrap';
-import MapPicker from './MapPicker';
+import './CreateContainerModal.css';
 
 const CreateContainerModal = ({
   show,
@@ -84,6 +86,22 @@ const CreateContainerModal = ({
   // Secondary hubs would typically be filtered based on major hub selection
   const [hubOptions, setHubOptions] = useState([]);
 
+  // Sample predefined locations for quick selection
+  const predefinedLocations = {
+    pickup: [
+      { name: 'Mumbai Port', lat: 18.922, lng: 72.8347 },
+      { name: 'Chennai Port', lat: 13.1082, lng: 80.2921 },
+      { name: 'Kolkata Port', lat: 22.5414, lng: 88.3435 },
+      { name: 'Visakhapatnam Port', lat: 17.6868, lng: 83.2185 },
+    ],
+    drop: [
+      { name: 'Delhi ICD', lat: 28.7041, lng: 77.1025 },
+      { name: 'Bangalore ICD', lat: 12.9716, lng: 77.5946 },
+      { name: 'Hyderabad ICD', lat: 17.385, lng: 78.4867 },
+      { name: 'Pune Logistics Park', lat: 18.5204, lng: 73.8567 },
+    ],
+  };
+
   // Load secondary hubs based on major hub selection
   useEffect(() => {
     // Reset hub selection when major hub changes
@@ -153,22 +171,50 @@ const CreateContainerModal = ({
     }
   };
 
-  // Handle pickup location change from map
-  const handlePickupLocationChange = (coords) => {
-    setContainer({
-      ...container,
-      pickup_lat: coords.lat,
-      pickup_lng: coords.lng,
-    });
+  // Handle coordinate input changes with validation
+  const handleCoordinateChange = (e) => {
+    const { name, value } = e.target;
+
+    // Allow empty value for resetting or "-" for negative coordinates
+    if (value === '' || value === '-') {
+      setContainer({
+        ...container,
+        [name]: value,
+      });
+      return;
+    }
+
+    // Validate as floating point number
+    const floatValue = parseFloat(value);
+    if (!isNaN(floatValue)) {
+      // Check for valid coordinate ranges
+      if (
+        (name.includes('lat') && Math.abs(floatValue) <= 90) ||
+        (name.includes('lng') && Math.abs(floatValue) <= 180)
+      ) {
+        setContainer({
+          ...container,
+          [name]: value,
+        });
+      }
+    }
   };
 
-  // Handle drop location change from map
-  const handleDropLocationChange = (coords) => {
-    setContainer({
-      ...container,
-      drop_lat: coords.lat,
-      drop_lng: coords.lng,
-    });
+  // Apply preset location coordinates
+  const applyPresetLocation = (locationType, preset) => {
+    if (locationType === 'pickup') {
+      setContainer({
+        ...container,
+        pickup_lat: preset.lat.toString(),
+        pickup_lng: preset.lng.toString(),
+      });
+    } else {
+      setContainer({
+        ...container,
+        drop_lat: preset.lat.toString(),
+        drop_lng: preset.lng.toString(),
+      });
+    }
   };
 
   // Handle form submission
@@ -201,16 +247,38 @@ const CreateContainerModal = ({
         newErrors.hub = 'Please select a hub';
       }
 
+      // Validate pickup coordinates
       if (!container.pickup_lat || !container.pickup_lng) {
-        newErrors.pickup_coordinates =
-          'Please select a pickup location on the map';
+        newErrors.pickup_coordinates = 'Please enter valid pickup coordinates';
+      } else {
+        const pickupLat = parseFloat(container.pickup_lat);
+        const pickupLng = parseFloat(container.pickup_lng);
+
+        if (isNaN(pickupLat) || Math.abs(pickupLat) > 90) {
+          newErrors.pickup_lat = 'Latitude must be between -90 and 90';
+        }
+
+        if (isNaN(pickupLng) || Math.abs(pickupLng) > 180) {
+          newErrors.pickup_lng = 'Longitude must be between -180 and 180';
+        }
       }
     }
 
     if (activeTab === 'dropoff') {
+      // Validate drop-off coordinates
       if (!container.drop_lat || !container.drop_lng) {
-        newErrors.drop_coordinates =
-          'Please select a drop-off location on the map';
+        newErrors.drop_coordinates = 'Please enter valid drop-off coordinates';
+      } else {
+        const dropLat = parseFloat(container.drop_lat);
+        const dropLng = parseFloat(container.drop_lng);
+
+        if (isNaN(dropLat) || Math.abs(dropLat) > 90) {
+          newErrors.drop_lat = 'Latitude must be between -90 and 90';
+        }
+
+        if (isNaN(dropLng) || Math.abs(dropLng) > 180) {
+          newErrors.drop_lng = 'Longitude must be between -180 and 180';
+        }
       }
     }
 
@@ -281,18 +349,30 @@ const CreateContainerModal = ({
           {existingContainer ? 'Edit Container' : 'Create New Container'}
         </Modal.Title>
       </Modal.Header>
-      <Modal.Body>
+      <Modal.Body className="container-modal-body">
         <Tabs
           activeKey={activeTab}
           onSelect={(k) => setActiveTab(k)}
-          className="mb-3"
+          className="mb-4"
         >
-          <Tab eventKey="basic" title="Basic Information">
+          <Tab
+            eventKey="basic"
+            title={
+              <span>
+                <i className="fas fa-info-circle me-2"></i>Basic Info
+              </span>
+            }
+          >
             <Form noValidate validated={validated}>
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3" controlId="container-id">
-                    <Form.Label>Container ID</Form.Label>
+                    <Form.Label>
+                      Container ID{' '}
+                      <Badge bg="danger" className="ms-1" pill>
+                        Required
+                      </Badge>
+                    </Form.Label>
                     <InputGroup>
                       <Form.Control
                         type="text"
@@ -304,7 +384,7 @@ const CreateContainerModal = ({
                         isInvalid={!!errors.container_id}
                       />
                       <Button
-                        variant="outline-secondary"
+                        variant="outline-danger"
                         onClick={generateContainerId}
                         title="Generate Container ID"
                       >
@@ -354,7 +434,12 @@ const CreateContainerModal = ({
 
                 <Col md={6}>
                   <Form.Group className="mb-3" controlId="container-contents">
-                    <Form.Label>Contents</Form.Label>
+                    <Form.Label>
+                      Contents{' '}
+                      <Badge bg="danger" className="ms-1" pill>
+                        Required
+                      </Badge>
+                    </Form.Label>
                     <Form.Control
                       type="text"
                       name="contents"
@@ -386,7 +471,8 @@ const CreateContainerModal = ({
 
                   <Form.Group className="mb-3" controlId="container-fill">
                     <Form.Label>
-                      Fill Percentage: {container.fill_percentage}%
+                      Fill Percentage:{' '}
+                      <strong>{container.fill_percentage}%</strong>
                     </Form.Label>
                     <Form.Range
                       name="fill_percentage"
@@ -395,7 +481,7 @@ const CreateContainerModal = ({
                       min="0"
                       max="100"
                     />
-                    <div className="progress">
+                    <div className="progress fill-progress">
                       <div
                         className={`progress-bar ${
                           container.fill_percentage > 90
@@ -417,12 +503,24 @@ const CreateContainerModal = ({
             </Form>
           </Tab>
 
-          <Tab eventKey="location" title="Pickup Location">
+          <Tab
+            eventKey="location"
+            title={
+              <span>
+                <i className="fas fa-map-marker-alt me-2"></i>Locations
+              </span>
+            }
+          >
             <Form noValidate validated={validated}>
               <Row className="mb-3">
                 <Col md={6}>
                   <Form.Group className="mb-3" controlId="container-major-hub">
-                    <Form.Label>Major Hub</Form.Label>
+                    <Form.Label>
+                      Major Hub{' '}
+                      <Badge bg="danger" className="ms-1" pill>
+                        Required
+                      </Badge>
+                    </Form.Label>
                     <Form.Select
                       name="major_hub"
                       value={container.major_hub}
@@ -444,7 +542,12 @@ const CreateContainerModal = ({
 
                 <Col md={6}>
                   <Form.Group className="mb-3" controlId="container-hub">
-                    <Form.Label>Hub</Form.Label>
+                    <Form.Label>
+                      Hub{' '}
+                      <Badge bg="danger" className="ms-1" pill>
+                        Required
+                      </Badge>
+                    </Form.Label>
                     <Form.Select
                       name="hub"
                       value={container.hub}
@@ -471,118 +574,250 @@ const CreateContainerModal = ({
                 </Col>
               </Row>
 
-              <Row className="mb-3">
-                <Col>
-                  <Form.Group>
-                    <Form.Label>Pickup Location</Form.Label>
-                    <MapPicker
-                      mode="pickup"
-                      height="300px"
-                      initialPosition={{ lat: 20.2961, lng: 85.8245 }}
-                      markers={{
-                        pickup:
-                          container.pickup_lat && container.pickup_lng
-                            ? {
-                                lat: parseFloat(container.pickup_lat),
-                                lng: parseFloat(container.pickup_lng),
+              <div className="coordinates-container">
+                <Row>
+                  {/* Pickup Location Column */}
+                  <Col md={6}>
+                    <div className="location-inputs">
+                      <h5>
+                        <i className="fas fa-map-marker-alt me-2"></i>Pickup
+                        Location
+                      </h5>
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              Latitude{' '}
+                              <Badge bg="danger" className="ms-1" pill>
+                                Required
+                              </Badge>
+                            </Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="pickup_lat"
+                              value={container.pickup_lat}
+                              onChange={handleCoordinateChange}
+                              placeholder="e.g., 20.2961"
+                              isInvalid={
+                                !!errors.pickup_lat ||
+                                !!errors.pickup_coordinates
                               }
-                            : null,
-                      }}
-                      onPickupChange={handlePickupLocationChange}
-                    />
-                    {errors.pickup_coordinates && (
-                      <div className="text-danger small mt-1">
-                        {errors.pickup_coordinates}
-                      </div>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Form>
-          </Tab>
-
-          <Tab eventKey="dropoff" title="Drop-off Location">
-            <Form noValidate validated={validated}>
-              <Row className="mb-3">
-                <Col>
-                  <Form.Group>
-                    <Form.Label>Drop-off Location</Form.Label>
-                    <MapPicker
-                      mode="drop"
-                      height="300px"
-                      initialPosition={{ lat: 18.5204, lng: 73.8567 }}
-                      markers={{
-                        drop:
-                          container.drop_lat && container.drop_lng
-                            ? {
-                                lat: parseFloat(container.drop_lat),
-                                lng: parseFloat(container.drop_lng),
+                              required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.pickup_lat || errors.pickup_coordinates}
+                            </Form.Control.Feedback>
+                            <Form.Text className="text-muted">
+                              Enter a value between -90 and 90
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              Longitude{' '}
+                              <Badge bg="danger" className="ms-1" pill>
+                                Required
+                              </Badge>
+                            </Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="pickup_lng"
+                              value={container.pickup_lng}
+                              onChange={handleCoordinateChange}
+                              placeholder="e.g., 85.8245"
+                              isInvalid={
+                                !!errors.pickup_lng ||
+                                !!errors.pickup_coordinates
                               }
-                            : null,
-                      }}
-                      onDropChange={handleDropLocationChange}
-                    />
-                    {errors.drop_coordinates && (
-                      <div className="text-danger small mt-1">
-                        {errors.drop_coordinates}
-                      </div>
-                    )}
-                  </Form.Group>
-                </Col>
-              </Row>
+                              required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.pickup_lng || errors.pickup_coordinates}
+                            </Form.Control.Feedback>
+                            <Form.Text className="text-muted">
+                              Enter a value between -180 and 180
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                      </Row>
 
-              <Row className="mt-3">
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Drop-off Latitude</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={container.drop_lat || ''}
-                      disabled
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Drop-off Longitude</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={container.drop_lng || ''}
-                      disabled
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
+                      <Form.Label>
+                        <i className="fas fa-bolt me-2"></i>Quick Select
+                      </Form.Label>
+                      <div className="quick-select-container">
+                        {predefinedLocations.pickup.map((location, index) => (
+                          <Button
+                            key={index}
+                            variant="outline-danger"
+                            size="sm"
+                            className="w-100 text-start btn-coordinate-action mb-2"
+                            onClick={() =>
+                              applyPresetLocation('pickup', location)
+                            }
+                          >
+                            <i className="fas fa-map-marker-alt me-2"></i>
+                            {location.name}{' '}
+                            <span className="text-muted d-block text-truncate small">
+                              ({location.lat.toFixed(4)},{' '}
+                              {location.lng.toFixed(4)})
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+
+                      {container.pickup_lat && container.pickup_lng && (
+                        <Alert variant="info" className="mt-3 mb-0">
+                          <small>
+                            <strong>
+                              <i className="fas fa-check-circle me-1"></i>{' '}
+                              Selected Coordinates:
+                            </strong>{' '}
+                            {container.pickup_lat}, {container.pickup_lng}
+                          </small>
+                        </Alert>
+                      )}
+                    </div>
+                  </Col>
+
+                  {/* Drop-off Location Column */}
+                  <Col md={6}>
+                    <div className="location-inputs">
+                      <h5>
+                        <i className="fas fa-flag-checkered me-2"></i>Drop-off
+                        Location
+                      </h5>
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              Latitude{' '}
+                              <Badge bg="danger" className="ms-1" pill>
+                                Required
+                              </Badge>
+                            </Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="drop_lat"
+                              value={container.drop_lat}
+                              onChange={handleCoordinateChange}
+                              placeholder="e.g., 18.5204"
+                              isInvalid={
+                                !!errors.drop_lat || !!errors.drop_coordinates
+                              }
+                              required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.drop_lat || errors.drop_coordinates}
+                            </Form.Control.Feedback>
+                            <Form.Text className="text-muted">
+                              Enter a value between -90 and 90
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>
+                              Longitude{' '}
+                              <Badge bg="danger" className="ms-1" pill>
+                                Required
+                              </Badge>
+                            </Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="drop_lng"
+                              value={container.drop_lng}
+                              onChange={handleCoordinateChange}
+                              placeholder="e.g., 73.8567"
+                              isInvalid={
+                                !!errors.drop_lng || !!errors.drop_coordinates
+                              }
+                              required
+                            />
+                            <Form.Control.Feedback type="invalid">
+                              {errors.drop_lng || errors.drop_coordinates}
+                            </Form.Control.Feedback>
+                            <Form.Text className="text-muted">
+                              Enter a value between -180 and 180
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                      </Row>
+
+                      <Form.Label>
+                        <i className="fas fa-bolt me-2"></i>Quick Select
+                      </Form.Label>
+                      <div className="quick-select-container">
+                        {predefinedLocations.drop.map((location, index) => (
+                          <Button
+                            key={index}
+                            variant="outline-danger"
+                            size="sm"
+                            className="w-100 text-start btn-coordinate-action mb-2"
+                            onClick={() =>
+                              applyPresetLocation('drop', location)
+                            }
+                          >
+                            <i className="fas fa-map-marker-alt me-2"></i>
+                            {location.name}{' '}
+                            <span className="text-muted d-block text-truncate small">
+                              ({location.lat.toFixed(4)},{' '}
+                              {location.lng.toFixed(4)})
+                            </span>
+                          </Button>
+                        ))}
+                      </div>
+
+                      {container.drop_lat && container.drop_lng && (
+                        <Alert variant="info" className="mt-3 mb-0">
+                          <small>
+                            <i className="fas fa-check-circle me-1"></i>{' '}
+                            <strong>Selected Coordinates:</strong>{' '}
+                            {container.drop_lat}, {container.drop_lng}
+                          </small>
+                        </Alert>
+                      )}
+                    </div>
+                  </Col>
+                </Row>
+              </div>
             </Form>
           </Tab>
         </Tabs>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={handleClose}>
-          Cancel
+        <Button variant="outline-secondary" onClick={handleClose}>
+          <i className="fas fa-times me-1"></i> Cancel
         </Button>
         <Button
-          variant={activeTab === 'dropoff' ? 'success' : 'primary'}
+          variant="danger"
           onClick={
-            activeTab === 'dropoff'
+            activeTab === 'location'
               ? handleSubmit
-              : () =>
-                  setActiveTab(activeTab === 'basic' ? 'location' : 'dropoff')
+              : () => setActiveTab('location')
           }
           disabled={isSubmitting}
         >
-          {isSubmitting && (
+          {isSubmitting ? (
             <span
               className="spinner-border spinner-border-sm me-1"
               role="status"
               aria-hidden="true"
             ></span>
+          ) : activeTab === 'location' ? (
+            <>
+              <i className="fas fa-save me-1"></i>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-arrow-right me-1"></i>
+            </>
           )}
-          {activeTab === 'dropoff'
+          {activeTab === 'location'
             ? existingContainer
               ? 'Update Container'
               : 'Create Container'
-            : 'Next'}
+            : 'Next Step'}
         </Button>
       </Modal.Footer>
     </Modal>
