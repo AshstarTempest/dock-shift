@@ -8,6 +8,7 @@ from pathlib import Path
 # Add parent directory to path to fix import issues
 sys.path.insert(0, str(Path(__file__).parent))
 from models import db, User
+from routes.logistics_routes import logistics_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -18,6 +19,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Initialize extensions
 db.init_app(app)
 CORS(app, supports_credentials=True)
+
+# Register blueprints
+app.register_blueprint(logistics_bp)
 
 # Setup Flask-Login
 login_manager = LoginManager()

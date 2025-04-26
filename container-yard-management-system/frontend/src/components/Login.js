@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
+import Animate from './Animate';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -81,13 +82,21 @@ const Login = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-header">
-          <div className="logo-circle gradient-logo">CY</div>
+    <div className="auth-container dockshift-theme">
+      <div className="auth-card dockshift-theme">
+        <div className="auth-header dockshift-theme">
+          <div
+            className="logo-circle"
+            style={{ background: 'var(--dockshift-primary)', color: 'white' }}
+          >
+            DS
+          </div>
           <h2>Welcome Back</h2>
-          <p>Sign in to access your account</p>
+          <p>Sign in to your DockShift account</p>
         </div>
+
+        {/* Truck Animation */}
+        <Animate className="login-animation" />
 
         {successMessage && (
           <div className="success-message">
@@ -132,7 +141,9 @@ const Login = () => {
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email" style={{ color: 'var(--dockshift-text)' }}>
+              Email Address
+            </label>
             <input
               type="email"
               id="email"
@@ -141,12 +152,22 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Enter your email"
               className={errors.email ? 'error' : ''}
+              style={{
+                background: 'var(--dockshift-card-bg)',
+                color: 'var(--dockshift-text)',
+                border: '1px solid var(--dockshift-border)',
+              }}
             />
             {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="password">Password</label>
+            <label
+              htmlFor="password"
+              style={{ color: 'var(--dockshift-text)' }}
+            >
+              Password
+            </label>
             <input
               type="password"
               id="password"
@@ -155,6 +176,11 @@ const Login = () => {
               onChange={handleChange}
               placeholder="Enter your password"
               className={errors.password ? 'error' : ''}
+              style={{
+                background: 'var(--dockshift-card-bg)',
+                color: 'var(--dockshift-text)',
+                border: '1px solid var(--dockshift-border)',
+              }}
             />
             {errors.password && (
               <div className="field-error">{errors.password}</div>
@@ -183,12 +209,13 @@ const Login = () => {
               isSubmitting ? 'loading' : ''
             }`}
             disabled={isSubmitting}
+            style={{ background: 'var(--dockshift-primary)', color: 'white' }}
           >
             {isSubmitting ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
-        <div className="auth-footer">
+        <div className="auth-footer dockshift-theme">
           <p>
             Don't have an account? <Link to="/register">Create one</Link>
           </p>

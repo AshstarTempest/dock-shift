@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../contexts/AuthContext';
-// hello
+
 const Register = () => {
   const [formData, setFormData] = useState({
     firstName: '',
@@ -118,12 +118,17 @@ const Register = () => {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card register-card">
-        <div className="auth-header">
-          <div className="logo-circle gradient-logo">CY</div>
+    <div className="auth-container dockshift-theme">
+      <div className="auth-card register-card dockshift-theme">
+        <div className="auth-header dockshift-theme">
+          <div
+            className="logo-circle"
+            style={{ background: 'var(--dockshift-primary)', color: 'white' }}
+          >
+            DS
+          </div>
           <h2>Create an Account</h2>
-          <p>Join ContainerYard Management System</p>
+          <p>Join DockShift Management System</p>
         </div>
 
         {registrationError && (
@@ -150,7 +155,12 @@ const Register = () => {
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="firstName">First Name</label>
+              <label
+                htmlFor="firstName"
+                style={{ color: 'var(--dockshift-text)' }}
+              >
+                First Name
+              </label>
               <input
                 type="text"
                 id="firstName"
@@ -159,14 +169,23 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Enter your first name"
                 className={errors.firstName ? 'error' : ''}
+                style={{
+                  background: 'var(--dockshift-card-bg)',
+                  color: 'var(--dockshift-text)',
+                  border: '1px solid var(--dockshift-border)',
+                }}
               />
               {errors.firstName && (
                 <div className="field-error">{errors.firstName}</div>
               )}
             </div>
-
             <div className="form-group">
-              <label htmlFor="lastName">Last Name</label>
+              <label
+                htmlFor="lastName"
+                style={{ color: 'var(--dockshift-text)' }}
+              >
+                Last Name
+              </label>
               <input
                 type="text"
                 id="lastName"
@@ -175,15 +194,21 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Enter your last name"
                 className={errors.lastName ? 'error' : ''}
+                style={{
+                  background: 'var(--dockshift-card-bg)',
+                  color: 'var(--dockshift-text)',
+                  border: '1px solid var(--dockshift-border)',
+                }}
               />
               {errors.lastName && (
                 <div className="field-error">{errors.lastName}</div>
               )}
             </div>
           </div>
-
           <div className="form-group">
-            <label htmlFor="email">Email Address</label>
+            <label htmlFor="email" style={{ color: 'var(--dockshift-text)' }}>
+              Email Address
+            </label>
             <input
               type="email"
               id="email"
@@ -192,12 +217,21 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Enter your email"
               className={errors.email ? 'error' : ''}
+              style={{
+                background: 'var(--dockshift-card-bg)',
+                color: 'var(--dockshift-text)',
+                border: '1px solid var(--dockshift-border)',
+              }}
             />
             {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
-
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label
+              htmlFor="username"
+              style={{ color: 'var(--dockshift-text)' }}
+            >
+              Username
+            </label>
             <input
               type="text"
               id="username"
@@ -206,15 +240,24 @@ const Register = () => {
               onChange={handleChange}
               placeholder="Choose a username"
               className={errors.username ? 'error' : ''}
+              style={{
+                background: 'var(--dockshift-card-bg)',
+                color: 'var(--dockshift-text)',
+                border: '1px solid var(--dockshift-border)',
+              }}
             />
             {errors.username && (
               <div className="field-error">{errors.username}</div>
             )}
           </div>
-
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="password">Password</label>
+              <label
+                htmlFor="password"
+                style={{ color: 'var(--dockshift-text)' }}
+              >
+                Password
+              </label>
               <input
                 type="password"
                 id="password"
@@ -223,14 +266,23 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Create a password"
                 className={errors.password ? 'error' : ''}
+                style={{
+                  background: 'var(--dockshift-card-bg)',
+                  color: 'var(--dockshift-text)',
+                  border: '1px solid var(--dockshift-border)',
+                }}
               />
               {errors.password && (
                 <div className="field-error">{errors.password}</div>
               )}
             </div>
-
             <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
+              <label
+                htmlFor="confirmPassword"
+                style={{ color: 'var(--dockshift-text)' }}
+              >
+                Confirm Password
+              </label>
               <input
                 type="password"
                 id="confirmPassword"
@@ -239,13 +291,17 @@ const Register = () => {
                 onChange={handleChange}
                 placeholder="Confirm your password"
                 className={errors.confirmPassword ? 'error' : ''}
+                style={{
+                  background: 'var(--dockshift-card-bg)',
+                  color: 'var(--dockshift-text)',
+                  border: '1px solid var(--dockshift-border)',
+                }}
               />
               {errors.confirmPassword && (
                 <div className="field-error">{errors.confirmPassword}</div>
               )}
             </div>
           </div>
-
           <div className="terms-agreement">
             <input
               type="checkbox"
@@ -255,7 +311,10 @@ const Register = () => {
               onChange={handleChange}
               className={errors.acceptTerms ? 'error' : ''}
             />
-            <label htmlFor="acceptTerms">
+            <label
+              htmlFor="acceptTerms"
+              style={{ color: 'var(--dockshift-text)' }}
+            >
               I agree to the <Link to="/terms">Terms and Conditions</Link> and{' '}
               <Link to="/privacy">Privacy Policy</Link>
             </label>
@@ -263,19 +322,18 @@ const Register = () => {
           {errors.acceptTerms && (
             <div className="field-error">{errors.acceptTerms}</div>
           )}
-
           <button
             type="submit"
             className={`btn btn-primary auth-btn ${
               isSubmitting ? 'loading' : ''
             }`}
             disabled={isSubmitting}
+            style={{ background: 'var(--dockshift-primary)', color: 'white' }}
           >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
-
-        <div className="auth-footer">
+        <div className="auth-footer dockshift-theme">
           <p>
             Already have an account? <Link to="/login">Sign In</Link>
           </p>
