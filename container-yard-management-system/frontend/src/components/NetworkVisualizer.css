@@ -1,139 +1,98 @@
 /* NetworkVisualizer.css */
 .network-visualizer {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  padding: 20px;
+  margin-bottom: 40px;
 }
 
 .network-visualizer .card-header {
-  background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+  background-color: #d32f2f;
 }
 
-.network-visualizer .network-container {
-  min-height: 600px;
+.network-container {
+  height: 600px;
   overflow: hidden;
   position: relative;
 }
 
-.network-visualizer svg {
-  display: block;
-  height: 600px;
-}
-
-.network-visualizer .legend {
-  font-size: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.network-visualizer .route-info {
-  background-color: rgba(211, 47, 47, 0.05);
-  border-color: rgba(211, 47, 47, 0.2);
-}
-
-.network-visualizer .btn-danger {
-  background-color: #d32f2f;
-  border-color: #b71c1c;
-}
-
-.network-visualizer .btn-danger:hover {
-  background-color: #b71c1c;
-  border-color: #7f0000;
+.tooltip-network {
+  position: absolute;
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 8px 12px;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  z-index: 1000;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .node-major {
   fill: #ef5350;
-  stroke: #c62828;
+  stroke: #b71c1c;
   stroke-width: 1.5px;
-  cursor: pointer;
 }
 
 .node-sub {
   fill: #90a4ae;
-  stroke: #607d8b;
-  stroke-width: 1.5px;
-  cursor: pointer;
+  stroke: #546e7a;
+  stroke-width: 1px;
 }
 
 .node-path {
   fill: #d32f2f;
   stroke: #b71c1c;
-  stroke-width: 1.5px;
-  cursor: pointer;
-}
-
-.link {
-  stroke: #ccc;
-  stroke-opacity: 0.8;
+  stroke-width: 2px;
 }
 
 .link-path {
-  stroke: #d32f2f;
-  stroke-opacity: 0.8;
-  stroke-width: 2.5px;
-  stroke-dasharray: 5, 5;
+  animation: link-pulse 2s infinite;
 }
 
-.tooltip-network {
-  position: absolute;
-  padding: 8px;
-  background: white;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  pointer-events: none;
-  font-size: 12px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  z-index: 10;
+@keyframes link-pulse {
+  0% { stroke-opacity: 0.4; }
+  50% { stroke-opacity: 0.8; }
+  100% { stroke-opacity: 0.4; }
 }
 
-/* India outline styling */
-.india-outline {
-  fill: #f5f5f5;
-  stroke: #cccccc;
-  stroke-width: 0.5px;
-}
-
-/* Enterprise Logistics Banner Styling */
-.enterprise-banner {
-  background-color: #1c1c1c;
-  color: white;
-  padding: 10px;
-  text-align: center;
-  font-family: "Courier New", monospace;
-  font-weight: bold;
-  letter-spacing: 1px;
-  margin-bottom: 15px;
-  border-radius: 4px;
-  text-shadow: 0px 0px 6px rgba(255,255,255,0.3);
-}
-
-/* Custom spinner */
 .network-spinner {
-  display: inline-block;
   width: 50px;
   height: 50px;
-  border: 3px solid rgba(211,47,47,0.3);
+  border: 5px solid rgba(211, 47, 47, 0.2);
   border-radius: 50%;
   border-top-color: #d32f2f;
-  animation: spin 1s ease-in-out infinite;
+  margin: 0 auto;
+  animation: spin 1s infinite linear;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .network-visualizer .legend {
-    flex-direction: column;
+.enterprise-banner {
+  background-color: #222;
+  color: #d32f2f;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  font-family: monospace;
+  font-size: 10px;
+  line-height: 1.2;
+  overflow-x: auto;
+}
+
+@media (min-width: 992px) {
+  .enterprise-banner {
+    font-size: 12px;
   }
-  
-  .network-visualizer .legend > div {
-    margin-bottom: 5px;
+}
+
+@media (max-width: 992px) {
+  .enterprise-banner pre {
+    font-size: 6px;
   }
-  
-  .network-visualizer svg {
-    height: 400px; /* Smaller height on mobile */
-  }
-  
-  .network-visualizer .network-container {
-    min-height: 400px;
-  }
+}
+
+.route-info {
+  border-left: 4px solid #d32f2f !important;
 }

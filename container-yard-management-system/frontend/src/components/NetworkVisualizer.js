@@ -3,19 +3,37 @@ import { Card, Row, Col, Button, Spinner, Badge, Form } from 'react-bootstrap';
 import * as d3 from 'd3';
 import './NetworkVisualizer.css';
 
+class UnionFind {
+  constructor(size) {
+    this.parent = Array.from({ length: size }, (_, i) => i);
+    this.rank = Array(size).fill(0);
+  }
+
+  find(x) {
+    if (this.parent[x] !== x) {
+      this.parent[x] = this.find(this.parent[x]);
+    }
+    return this.parent[x];
+  }
+
+  union(x, y) {
+    const xroot = this.find(x);
+    const yroot = this.find(y);
+    if (xroot === yroot) return false;
+
+    if (this.rank[xroot] < this.rank[yroot]) {
+      this.parent[xroot] = yroot;
+    } else {
+      this.parent[yroot] = xroot;
+      if (this.rank[xroot] === this.rank[yroot]) {
+        this.rank[xroot]++;
+      }
+    }
+    return true;
+  }
+}
+
 const NetworkVisualizer = () => {
-  const [networkData, setNetworkData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [selectedView, setSelectedView] = useState('mst'); // 'mst', 'all', 'major'
-  const [selectedPath, setSelectedPath] = useState([]);
-  const [startHub, setStartHub] = useState('');
-  const [endHub, setEndHub] = useState('');
-  
-  const svgRef = useRef(null);
-  const tooltipRef = useRef(null);
-  const containerRef = useRef(null);
-  
   // ASCII banner for Enterprise Logistics
   const asciiBanner = `
 ███████╗███████╗███████╗██████╗ ██╗      ██████╗  ██████╗ 
@@ -27,8 +45,32 @@ const NetworkVisualizer = () => {
                                                        
 Enterprise Logistics Management System with Emotional AI`;
 
-  // Mock hub data from the ESSPL Logistics system
-  const HUB_DATA = `State,City,Latitude,Longitude,Type
+  const [hubs, setHubs] = useState([]);
+  const [mst, setMst] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedView, setSelectedView] = useState('mst'); // 'mst', 'all', 'major'
+  const [selectedPath, setSelectedPath] = useState([]);
+  const [startHub, setStartHub] = useState('');
+  const [endHub, setEndHub] = useState('');
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [cargoStatus, setCargoStatus] = useState({});
+
+  const svgRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // Config
+  const CONFIG = {
+    ORS_API_KEY: '5b3ce3597851110001cf624863fa5d6c0925454c9424faa7c4c91985',
+    EXPRESS_THRESHOLD: 0.5,
+    STANDARD_THRESHOLD: 0.8,
+    HYBRID_THRESHOLD: 0.65,
+    MAX_HUBS: 100,
+    SPEED_PROFILE: { express: 60, standard: 40 },
+    MAX_RETRIES: 3,
+    RETRY_BASE_DELAY: 2,
+    HUB_DATA: `State,City,Latitude,Longitude,Type
 Andhra Pradesh,Vijayawada,16.504347,80.645843,major
 Arunachal Pradesh,Itanagar,27.091086,93.596806,major
 Assam,Guwahati,26.135341,91.735217,major
@@ -49,7 +91,20 @@ Mizoram,Aizawl,23.73101,92.711071,major
 Nagaland,Dimapur,25.896172,93.718831,major
 Odisha,Bhubaneswar,20.297132,85.830375,major
 Punjab,Ludhiana,30.90374,75.857833,major
-Rajasthan,Jaipur,26.921195
+Rajasthan,Jaipur,26.921195,75.784667,major
+Sikkim,Gangtok,27.324654,88.613151,major
+Tamil Nadu,Chennai,13.084113,80.267506,major
+Telangana,Hyderabad,17.379828,78.489978,major
+Tripura,Agartala,23.835036,91.278077,major
+Uttar Pradesh,Lucknow,26.84023,80.950943,major
+Uttarakhand,Dehradun,30.319949,78.032139,major
+West Bengal,Kolkata,22.565836,88.363023,major
+Delhi,New Delhi,28.613407,77.216016,major
+Jammu and Kashmir,Srinagar,34.08646,74.800107,major
+Ladakh,Leh,34.162043,77.577688,major
+West Bengal,Kolkata,22.572912,88.361454,sub
+West Bengal,Howrah,22.587306,88.258067,sub
+West Bengal,Durgapur,23.521529,87.305634,sub
 West Bengal,Asansol,23.669562,86.943659,sub
 West Bengal,Siliguri,26.726044,88.394222,sub
 West Bengal,Darjeeling,27.044137,88.269625,sub
@@ -76,316 +131,427 @@ Maharashtra,Aurangabad,19.877461,75.350927,sub
 Maharashtra,Solapur,17.65678,75.907452,sub
 Maharashtra,Amravati,20.933012,77.774769,sub
 Maharashtra,Kolhapur,16.699147,74.235303,sub
-Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
+Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
+  };
 
-  // Parse the hub data
-  const parseHubData = useCallback(() => {
-    const lines = HUB_DATA.trim().split('\n');
-    const headers = lines[0].split(',');
-    
-    const hubs = lines.slice(1).map(line => {
-      const values = line.split(',');
-      const hub = {};
-      headers.forEach((header, index) => {
-        if (header === 'Latitude' || header === 'Longitude') {
-          hub[header.toLowerCase()] = parseFloat(values[index]);
-        } else {
-          hub[header.toLowerCase()] = values[index];
-        }
-      });
-      hub.id = `${hub.state.slice(0, 3)}-${hub.city.slice(0, 5)}`.toUpperCase();
-      return hub;
-    });
-    
-    return hubs;
-  }, [HUB_DATA]);
-
-  // Generate MST edges (mock implementation since we don't have actual MST algorithm running)
-  const generateMockMSTEdges = useCallback((hubs) => {
-    const edges = [];
-    // Connect major hubs in a spanning tree
-    const majorHubs = hubs.filter(h => h.type === 'major');
-    
-    for (let i = 1; i < majorHubs.length; i++) {
-      edges.push({
-        source: majorHubs[i-1].id,
-        target: majorHubs[i].id,
-        distance: calculateHaversineDistance(
-          majorHubs[i-1].latitude, majorHubs[i-1].longitude,
-          majorHubs[i].latitude, majorHubs[i].longitude
-        )
-      });
-    }
-    
-    // Connect sub hubs to their closest major hub
-    const subHubs = hubs.filter(h => h.type === 'sub');
-    subHubs.forEach(subHub => {
-      let closestMajor = null;
-      let minDistance = Infinity;
-      
-      majorHubs.forEach(majorHub => {
-        const distance = calculateHaversineDistance(
-          subHub.latitude, subHub.longitude,
-          majorHub.latitude, majorHub.longitude
-        );
-        
-        if (distance < minDistance) {
-          minDistance = distance;
-          closestMajor = majorHub;
-        }
-      });
-      
-      if (closestMajor) {
-        edges.push({
-          source: subHub.id,
-          target: closestMajor.id,
-          distance: minDistance
-        });
-      }
-    });
-    
-    return edges;
-  }, []);
-  
-  // Haversine distance calculation
+  // Haversine distance calculation (used when API is unavailable)
   const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371; // Earth radius in kilometers
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
-  
-  // Find path between two hubs
-  const findPath = (start, end, edges) => {
-    const graph = {};
-    edges.forEach(edge => {
-      if (!graph[edge.source]) graph[edge.source] = [];
-      if (!graph[edge.target]) graph[edge.target] = [];
-      
-      graph[edge.source].push({ node: edge.target, distance: edge.distance });
-      graph[edge.target].push({ node: edge.source, distance: edge.distance });
-    });
-    
-    // Breadth-first search for simplicity
-    const visited = { [start]: null };
-    const queue = [start];
-    
+
+  // Load hubs from config
+  const loadHubs = useCallback(() => {
+    try {
+      console.log('\n🔍 Loading hub network...');
+      const lines = CONFIG.HUB_DATA.split('\n');
+      const header = lines[0].split(',');
+      const hubsList = [];
+
+      for (
+        let i = 1;
+        i < lines.length && hubsList.length < CONFIG.MAX_HUBS;
+        i++
+      ) {
+        const values = lines[i].split(',');
+        const hub = {};
+
+        header.forEach((key, index) => {
+          if (key === 'Latitude' || key === 'Longitude') {
+            hub[key.toLowerCase()] = parseFloat(values[index]);
+          } else {
+            hub[key.toLowerCase()] = values[index];
+          }
+        });
+
+        hub.id = `${hub.state.slice(0, 3)}-${hub.city.slice(
+          0,
+          5
+        )}`.toUpperCase();
+        hubsList.push(hub);
+      }
+
+      console.log(`✅ Successfully loaded ${hubsList.length} hubs`);
+      return hubsList;
+    } catch (error) {
+      console.error('❌ Error loading hubs:', error);
+      throw new Error('Failed to load hub network data');
+    }
+  }, [CONFIG]);
+
+  // Build Minimum Spanning Tree (MST)
+  const buildMST = useCallback((hubsList) => {
+    console.log('\n🔨 Building optimal network (MST)...');
+    const edges = [];
+
+    // Calculate distances between all pairs of hubs
+    for (let i = 0; i < hubsList.length; i++) {
+      for (let j = i + 1; j < hubsList.length; j++) {
+        const dist = calculateHaversineDistance(
+          hubsList[i].latitude,
+          hubsList[i].longitude,
+          hubsList[j].latitude,
+          hubsList[j].longitude
+        );
+        edges.push([dist, i, j]);
+      }
+    }
+
+    // Sort edges by distance (ascending)
+    edges.sort((a, b) => a[0] - b[0]);
+
+    const mstEdges = [];
+    const uf = new UnionFind(hubsList.length);
+    let totalDist = 0;
+
+    // Apply Kruskal's algorithm
+    for (const [dist, u, v] of edges) {
+      if (uf.union(u, v)) {
+        mstEdges.push([u, v, dist]);
+        totalDist += dist;
+
+        if (mstEdges.length === hubsList.length - 1) {
+          break; // MST is complete
+        }
+      }
+    }
+
+    console.log(`✅ MST Construction Complete`);
+    console.log(`   Total Connections: ${mstEdges.length}`);
+    console.log(`   Network Distance: ${totalDist.toFixed(2)}km`);
+
+    return { mstEdges, totalDist };
+  }, []);
+
+  // Find optimal path between two hubs
+  const findOptimalPath = useCallback((startId, endId, hubsList, mstEdges) => {
+    // Create adjacency list from MST
+    const adj = {};
+    for (const [u, v, dist] of mstEdges) {
+      const hubU = hubsList[u].id;
+      const hubV = hubsList[v].id;
+
+      if (!adj[hubU]) adj[hubU] = [];
+      if (!adj[hubV]) adj[hubV] = [];
+
+      adj[hubU].push([hubV, dist]);
+      adj[hubV].push([hubU, dist]);
+    }
+
+    // Breadth-first search
+    const visited = { [startId]: null };
+    const queue = [startId];
+
     while (queue.length > 0) {
       const current = queue.shift();
-      
-      if (current === end) break;
-      
-      if (graph[current]) {
-        for (const neighbor of graph[current]) {
-          if (!visited.hasOwnProperty(neighbor.node)) {
-            visited[neighbor.node] = current;
-            queue.push(neighbor.node);
+
+      if (current === endId) break;
+
+      for (const [neighbor, dist] of adj[current] || []) {
+        if (!visited.hasOwnProperty(neighbor)) {
+          visited[neighbor] = current;
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    // Reconstruct path
+    const path = [];
+    let totalDist = 0;
+    let current = endId;
+
+    while (current) {
+      path.unshift(current);
+      const prev = visited[current];
+
+      if (prev) {
+        for (const [neighbor, dist] of adj[current] || []) {
+          if (neighbor === prev) {
+            totalDist += dist;
+            break;
           }
         }
       }
+
+      current = prev;
     }
-    
-    // Reconstruct path
-    const path = [];
-    let current = end;
-    
-    while (current) {
-      path.unshift(current);
-      current = visited[current];
-    }
-    
-    return path.length > 1 ? path : [];
-  };
-  
-  // Initialize data on component mount
-  useEffect(() => {
-    setLoading(true);
-    try {
-      const hubs = parseHubData();
-      const mstEdges = generateMockMSTEdges(hubs);
-      
-      setNetworkData({
-        hubs: hubs,
-        edges: mstEdges
-      });
-      
-      // Set default start and end hubs
-      if (hubs.length >= 2) {
-        setStartHub(hubs.find(h => h.type === 'major')?.id || hubs[0].id);
-        setEndHub(hubs.find(h => h.type === 'major' && h.id !== startHub)?.id || hubs[1].id);
+
+    return { path, totalDist };
+  }, []);
+
+  // Add cargo to container
+  const addCargo = useCallback((containerId, mode, fillPct) => {
+    setCargoStatus((prevStatus) => {
+      const hubCode = containerId.split('-')[1];
+      const newStatus = { ...prevStatus };
+
+      if (!newStatus[hubCode]) {
+        newStatus[hubCode] = {
+          express: {},
+          standard: {},
+        };
       }
-      
-      setLoading(false);
-    } catch (err) {
-      setError(`Failed to load network data: ${err.message}`);
-      setLoading(false);
-    }
-  }, [parseHubData, generateMockMSTEdges]);
-  
-  // Draw network visualization
+
+      if (!newStatus[hubCode][mode][containerId]) {
+        newStatus[hubCode][mode][containerId] = 0;
+      }
+
+      newStatus[hubCode][mode][containerId] += fillPct;
+
+      console.log(
+        `\n📦 Added ${fillPct * 100}% to ${containerId} (${mode}) at ${hubCode}`
+      );
+
+      return newStatus;
+    });
+  }, []);
+
+  // Initialize data when component mounts
   useEffect(() => {
-    if (!networkData || loading) return;
-    
+    const initializeNetwork = async () => {
+      setLoading(true);
+      try {
+        // Load hubs data
+        const hubsList = loadHubs();
+        setHubs(hubsList);
+
+        // Build MST
+        const { mstEdges, totalDist } = buildMST(hubsList);
+        setMst(mstEdges);
+        setTotalDistance(totalDist);
+
+        // Set default start and end hubs
+        if (hubsList.length >= 2) {
+          const majorHubs = hubsList.filter((h) => h.type === 'major');
+          if (majorHubs.length >= 2) {
+            setStartHub(majorHubs[0].id);
+            setEndHub(majorHubs[1].id);
+          } else {
+            setStartHub(hubsList[0].id);
+            setEndHub(hubsList[1].id);
+          }
+        }
+
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to initialize network:', err);
+        setError(`Failed to load network data: ${err.message}`);
+        setLoading(false);
+      }
+    };
+
+    initializeNetwork();
+  }, [loadHubs, buildMST]);
+
+  // Handle finding path between selected hubs
+  const handleFindPath = () => {
+    if (!startHub || !endHub) return;
+
+    const hubsMap = {};
+    hubs.forEach((hub, index) => {
+      hubsMap[hub.id] = index;
+    });
+
+    const { path, totalDist } = findOptimalPath(startHub, endHub, hubs, mst);
+    setSelectedPath(path);
+
+    // Calculate ETA for both shipping modes
+    const expressETA = totalDist / CONFIG.SPEED_PROFILE.express;
+    const standardETA = totalDist / CONFIG.SPEED_PROFILE.standard;
+
+    console.log(`\n🗺️ Route from ${startHub} to ${endHub}`);
+    console.log(`➔ ${path.join(' → ')}`);
+    console.log(`📏 Total Distance: ${totalDist.toFixed(2)}km`);
+    console.log(`⏱️ Express ETA: ${expressETA.toFixed(1)} hours`);
+    console.log(`⏱️ Standard ETA: ${standardETA.toFixed(1)} hours`);
+
+    // Simulate adding some cargo
+    const containerId = `CTN-${startHub}-${new Date()
+      .getTime()
+      .toString()
+      .slice(-6)}`;
+    addCargo(
+      containerId,
+      Math.random() < 0.5 ? 'express' : 'standard',
+      Math.random() * 0.5 + 0.3
+    );
+  };
+
+  // Draw network visualization using D3
+  useEffect(() => {
+    if (loading || !hubs.length || !mst.length) return;
+
     const width = containerRef.current ? containerRef.current.offsetWidth : 800;
     const height = 600;
-    
+
     // Clear previous SVG content
-    d3.select(svgRef.current).selectAll("*").remove();
-    
+    d3.select(svgRef.current).selectAll('*').remove();
+
     // Create SVG
-    const svg = d3.select(svgRef.current)
-      .attr("width", width)
-      .attr("height", height)
-      .attr("viewBox", [0, 0, width, height])
-      .attr("style", "max-width: 100%; height: auto; font: 10px sans-serif;");
-    
-    // Filter nodes and links based on view
-    let displayHubs = networkData.hubs;
+    const svg = d3
+      .select(svgRef.current)
+      .attr('width', width)
+      .attr('height', height)
+      .attr('viewBox', [0, 0, width, height])
+      .attr('style', 'max-width: 100%; height: auto; font: 10px sans-serif;');
+
+    // Filter nodes and links based on selected view
+    let displayHubs = hubs;
     if (selectedView === 'major') {
-      displayHubs = networkData.hubs.filter(h => h.type === 'major');
+      displayHubs = hubs.filter((h) => h.type === 'major');
     }
-    
-    const displayedHubIds = new Set(displayHubs.map(h => h.id));
-    
-    let displayEdges = networkData.edges;
-    if (selectedView !== 'all') {
-      displayEdges = networkData.edges.filter(e => 
-        displayedHubIds.has(e.source) && displayedHubIds.has(e.target)
-      );
-    }
-    
-    // Highlight the selected path if it exists
-    const pathEdges = [];
-    if (selectedPath.length > 1) {
-      for (let i = 0; i < selectedPath.length - 1; i++) {
-        pathEdges.push({
-          source: selectedPath[i],
-          target: selectedPath[i + 1]
-        });
-      }
-    }
-    
-    // Create a projection
-    const projection = d3.geoMercator()
-      .center([83, 23])  // Center on India
+
+    const displayedHubIds = new Set(displayHubs.map((h) => h.id));
+
+    // Create a projection for India
+    const projection = d3
+      .geoMercator()
+      .center([83, 23]) // Center on India
       .scale(1200)
       .translate([width / 2, height / 2]);
-    
+
     // Process nodes with position
-    const nodes = displayHubs.map(hub => ({
+    const nodes = displayHubs.map((hub) => ({
       id: hub.id,
       name: hub.city,
       state: hub.state,
       type: hub.type,
       x: projection([hub.longitude, hub.latitude])[0],
-      y: projection([hub.longitude, hub.latitude])[1]
+      y: projection([hub.longitude, hub.latitude])[1],
     }));
-    
+
     // Create node lookup for edge processing
-    const nodeById = new Map(nodes.map(node => [node.id, node]));
-    
-    // Process links with positions
-    const links = displayEdges
-      .filter(edge => nodeById.has(edge.source) && nodeById.has(edge.target))
-      .map(edge => ({
-        source: nodeById.get(edge.source),
-        target: nodeById.get(edge.target),
-        distance: edge.distance
-      }));
-      
-    // Path links
-    const highlightLinks = pathEdges
-      .filter(edge => nodeById.has(edge.source) && nodeById.has(edge.target))
-      .map(edge => ({
-        source: nodeById.get(edge.source),
-        target: nodeById.get(edge.target)
-      }));
-    
-    // Draw edges
-    svg.append("g")
-      .attr("stroke", "#999")
-      .attr("stroke-opacity", 0.4)
-      .selectAll("line")
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+    // Process links based on selected view
+    let links = [];
+
+    if (selectedView === 'mst') {
+      // Show only MST edges
+      links = mst
+        .filter(([u, v]) => {
+          const sourceId = hubs[u].id;
+          const targetId = hubs[v].id;
+          return displayedHubIds.has(sourceId) && displayedHubIds.has(targetId);
+        })
+        .map(([u, v, dist]) => ({
+          source: nodeById.get(hubs[u].id),
+          target: nodeById.get(hubs[v].id),
+          distance: dist,
+        }))
+        .filter((link) => link.source && link.target);
+    } else if (selectedView === 'all') {
+      // Show all possible connections for selected hubs
+      for (let i = 0; i < displayHubs.length; i++) {
+        for (let j = i + 1; j < displayHubs.length; j++) {
+          const source = displayHubs[i].id;
+          const target = displayHubs[j].id;
+
+          if (nodeById.has(source) && nodeById.has(target)) {
+            links.push({
+              source: nodeById.get(source),
+              target: nodeById.get(target),
+              distance: calculateHaversineDistance(
+                displayHubs[i].latitude,
+                displayHubs[i].longitude,
+                displayHubs[j].latitude,
+                displayHubs[j].longitude
+              ),
+            });
+          }
+        }
+      }
+    }
+
+    // Process selected path links
+    let pathLinks = [];
+    if (selectedPath.length > 1) {
+      for (let i = 0; i < selectedPath.length - 1; i++) {
+        if (
+          nodeById.has(selectedPath[i]) &&
+          nodeById.has(selectedPath[i + 1])
+        ) {
+          pathLinks.push({
+            source: nodeById.get(selectedPath[i]),
+            target: nodeById.get(selectedPath[i + 1]),
+          });
+        }
+      }
+    }
+
+    // Draw edges/links
+    svg
+      .append('g')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.4)
+      .selectAll('line')
       .data(links)
-      .join("line")
-      .attr("stroke-width", 1.5)
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y)
-      .append("title")
-      .text(d => `${d.source.name} ↔ ${d.target.name}: ${d.distance.toFixed(1)}km`);
-    
+      .join('line')
+      .attr('stroke-width', (d) => 1.5)
+      .attr('x1', (d) => d.source.x)
+      .attr('y1', (d) => d.source.y)
+      .attr('x2', (d) => d.target.x)
+      .attr('y2', (d) => d.target.y)
+      .append('title')
+      .text(
+        (d) => `${d.source.name} ↔ ${d.target.name}: ${d.distance.toFixed(1)}km`
+      );
+
     // Draw highlighted path
-    svg.append("g")
-      .attr("stroke", "#d32f2f")
-      .attr("stroke-opacity", 0.8)
-      .selectAll("line")
-      .data(highlightLinks)
-      .join("line")
-      .attr("stroke-width", 3)
-      .attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y)
-      .attr("stroke-dasharray", "5,5")
-      .attr("marker-end", "url(#arrowhead");
-    
-    // Define arrow marker
-    svg.append("defs").append("marker")
-      .attr("id", "arrowhead")
-      .attr("viewBox", "0 -5 10 10")
-      .attr("refX", 8)
-      .attr("refY", 0)
-      .attr("orient", "auto")
-      .attr("markerWidth", 6)
-      .attr("markerHeight", 6)
-      .append("path")
-      .attr("d", "M0,-5L10,0L0,5")
-      .attr("fill", "#d32f2f");
-    
+    svg
+      .append('g')
+      .attr('stroke', '#d32f2f')
+      .attr('stroke-opacity', 0.8)
+      .selectAll('line')
+      .data(pathLinks)
+      .join('line')
+      .attr('stroke-width', 3)
+      .attr('x1', (d) => d.source.x)
+      .attr('y1', (d) => d.source.y)
+      .attr('x2', (d) => d.target.x)
+      .attr('y2', (d) => d.target.y)
+      .attr('class', 'link-path');
+
     // Draw nodes
-    svg.append("g")
-      .selectAll("circle")
+    svg
+      .append('g')
+      .selectAll('circle')
       .data(nodes)
-      .join("circle")
-      .attr("cx", d => d.x)
-      .attr("cy", d => d.y)
-      .attr("r", d => d.type === "major" ? 6 : 4)
-      .attr("fill", d => {
+      .join('circle')
+      .attr('cx', (d) => d.x)
+      .attr('cy', (d) => d.y)
+      .attr('r', (d) => (d.type === 'major' ? 6 : 4))
+      .attr('class', (d) => {
         if (selectedPath.includes(d.id)) {
-          return "#d32f2f";  // Path node
+          return 'node-path';
         }
-        return d.type === "major" ? "#ef5350" : "#90a4ae";
+        return d.type === 'major' ? 'node-major' : 'node-sub';
       })
-      .attr("stroke", d => {
-        if (selectedPath.includes(d.id)) {
-          return "#b71c1c";  // Path node border
-        }
-        return d.type === "major" ? "#c62828" : "#607d8b";
-      })
-      .attr("stroke-width", 1.5)
-      .on("mouseover", (event, d) => {
-        d3.select(tooltipRef.current)
-          .style("visibility", "visible")
-          .style("left", `${event.pageX + 10}px`)
-          .style("top", `${event.pageY + 10}px`)
-          .html(`
+      .on('mouseover', (event, d) => {
+        d3
+          .select(tooltipRef.current)
+          .style('visibility', 'visible')
+          .style('left', `${event.pageX + 10}px`)
+          .style('top', `${event.pageY + 10}px`)
+          .attr('class', 'tooltip-network').html(`
             <strong>${d.name}, ${d.state}</strong><br>
             ID: ${d.id}<br>
             Type: ${d.type === 'major' ? 'Major Hub' : 'Sub Hub'}
           `);
       })
-      .on("mouseout", () => {
-        d3.select(tooltipRef.current)
-          .style("visibility", "hidden");
+      .on('mouseout', () => {
+        d3.select(tooltipRef.current).style('visibility', 'hidden');
       })
-      .on("click", (event, d) => {
+      .on('click', (event, d) => {
         // Select hub as start or end for path finding
         if (event.ctrlKey || event.metaKey) {
           setEndHub(d.id);
@@ -393,78 +559,74 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
           setStartHub(d.id);
         }
       });
-    
+
     // Draw labels for major hubs
-    svg.append("g")
-      .selectAll("text")
-      .data(nodes.filter(node => node.type === "major"))
-      .join("text")
-      .attr("x", d => d.x + 8)
-      .attr("y", d => d.y + 3)
-      .text(d => d.name)
-      .attr("font-family", "sans-serif")
-      .attr("font-size", 10)
-      .attr("fill", "#333");
-      
-    // Draw start/end labels
+    svg
+      .append('g')
+      .selectAll('text')
+      .data(nodes.filter((node) => node.type === 'major'))
+      .join('text')
+      .attr('x', (d) => d.x + 8)
+      .attr('y', (d) => d.y + 3)
+      .text((d) => d.name)
+      .attr('font-family', 'sans-serif')
+      .attr('font-size', 10)
+      .attr('fill', '#333');
+
+    // Add start/end labels if path is selected
     if (selectedPath.length > 1) {
       const startNode = nodeById.get(selectedPath[0]);
       const endNode = nodeById.get(selectedPath[selectedPath.length - 1]);
-      
-      svg.append("text")
-        .attr("x", startNode.x + 8)
-        .attr("y", startNode.y - 8)
-        .text("START")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", 10)
-        .attr("font-weight", "bold")
-        .attr("fill", "#d32f2f");
-        
-      svg.append("text")
-        .attr("x", endNode.x + 8)
-        .attr("y", endNode.y - 8)
-        .text("END")
-        .attr("font-family", "sans-serif")
-        .attr("font-size", 10)
-        .attr("font-weight", "bold")
-        .attr("fill", "#d32f2f");
+
+      if (startNode) {
+        svg
+          .append('text')
+          .attr('x', startNode.x + 8)
+          .attr('y', startNode.y - 8)
+          .text('START')
+          .attr('font-family', 'sans-serif')
+          .attr('font-size', 10)
+          .attr('font-weight', 'bold')
+          .attr('fill', '#d32f2f');
+      }
+
+      if (endNode) {
+        svg
+          .append('text')
+          .attr('x', endNode.x + 8)
+          .attr('y', endNode.y - 8)
+          .text('END')
+          .attr('font-family', 'sans-serif')
+          .attr('font-size', 10)
+          .attr('font-weight', 'bold')
+          .attr('fill', '#d32f2f');
+      }
     }
-    
-  }, [networkData, selectedView, selectedPath, loading]);
-  
-  // Handle finding path between selected hubs
-  const handleFindPath = () => {
-    if (!startHub || !endHub || !networkData) return;
-    
-    const path = findPath(startHub, endHub, networkData.edges);
-    setSelectedPath(path);
-  };
-  
+  }, [hubs, mst, selectedView, selectedPath, loading]);
+
   if (loading) {
     return (
       <div className="text-center my-5">
-        <Spinner animation="border" variant="primary" />
-        <p className="mt-3">Loading network data...</p>
+        <div className="network-spinner"></div>
+        <p className="mt-3">Loading logistics network...</p>
       </div>
     );
   }
-  
+
   if (error) {
-    return (
-      <div className="alert alert-danger my-3">
-        {error}
-      </div>
-    );
+    return <div className="alert alert-danger my-3">{error}</div>;
   }
 
   return (
     <div className="network-visualizer">
       <div className="enterprise-banner">
-        <pre className="mb-0" style={{overflow: 'hidden'}}>{asciiBanner}</pre>
+        <pre className="mb-0" style={{ overflow: 'auto', whiteSpace: 'pre' }}>
+          {asciiBanner}
+        </pre>
       </div>
-      
+
       <Card className="mb-4 shadow-sm border-0">
-        <Card.Header className="bg-danger text-white d-flex justify-content-between align-items-center">
+        <Card.Header className="text-white d-flex justify-content-between align-items-center">
           <div>
             <h5 className="mb-0">
               <i className="fas fa-project-diagram me-2"></i>
@@ -473,19 +635,21 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
           </div>
           <div>
             <Badge bg="light" text="danger" className="me-2">
-              {networkData?.hubs.filter(h => h.type === 'major').length} Major Hubs
+              {hubs.filter((h) => h.type === 'major').length} Major Hubs
             </Badge>
             <Badge bg="light" text="danger">
-              {networkData?.hubs.filter(h => h.type === 'sub').length} Sub Hubs
+              {hubs.filter((h) => h.type === 'sub').length} Sub Hubs
             </Badge>
           </div>
         </Card.Header>
-        
+
         <Card.Body>
           <Row className="mb-3">
             <Col md={6} lg={8}>
               <Form.Group>
-                <Form.Label><strong>Network View</strong></Form.Label>
+                <Form.Label>
+                  <strong>Network View</strong>
+                </Form.Label>
                 <div className="d-flex">
                   <Form.Check
                     type="radio"
@@ -516,46 +680,62 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
                 </div>
               </Form.Group>
             </Col>
+            <Col md={6} lg={4} className="text-end">
+              {totalDistance > 0 && (
+                <div className="text-muted">
+                  <small>
+                    Network Distance:{' '}
+                    <strong>{totalDistance.toFixed(2)} km</strong>
+                  </small>
+                </div>
+              )}
+            </Col>
           </Row>
-          
+
           <Row className="mb-3">
             <Col md={6} lg={4}>
               <Form.Group className="mb-3">
-                <Form.Label><strong>Starting Hub</strong></Form.Label>
-                <Form.Select 
-                  value={startHub} 
+                <Form.Label>
+                  <strong>Starting Hub</strong>
+                </Form.Label>
+                <Form.Select
+                  value={startHub}
                   onChange={(e) => setStartHub(e.target.value)}
                 >
                   <option value="">Select Starting Hub</option>
-                  {networkData?.hubs.map(hub => (
+                  {hubs.map((hub) => (
                     <option key={`start-${hub.id}`} value={hub.id}>
-                      {hub.city}, {hub.state} ({hub.type === 'major' ? 'Major' : 'Sub'})
+                      {hub.city}, {hub.state} (
+                      {hub.type === 'major' ? 'Major' : 'Sub'})
                     </option>
                   ))}
                 </Form.Select>
               </Form.Group>
             </Col>
-            
+
             <Col md={6} lg={4}>
               <Form.Group className="mb-3">
-                <Form.Label><strong>Destination Hub</strong></Form.Label>
-                <Form.Select 
-                  value={endHub} 
+                <Form.Label>
+                  <strong>Destination Hub</strong>
+                </Form.Label>
+                <Form.Select
+                  value={endHub}
                   onChange={(e) => setEndHub(e.target.value)}
                 >
                   <option value="">Select Destination Hub</option>
-                  {networkData?.hubs.map(hub => (
+                  {hubs.map((hub) => (
                     <option key={`end-${hub.id}`} value={hub.id}>
-                      {hub.city}, {hub.state} ({hub.type === 'major' ? 'Major' : 'Sub'})
+                      {hub.city}, {hub.state} (
+                      {hub.type === 'major' ? 'Major' : 'Sub'})
                     </option>
                   ))}
                 </Form.Select>
               </Form.Group>
             </Col>
-            
+
             <Col md={12} lg={4} className="d-flex align-items-end">
-              <Button 
-                variant="danger" 
+              <Button
+                variant="danger"
                 className="mb-3 w-100"
                 onClick={handleFindPath}
                 disabled={!startHub || !endHub}
@@ -565,7 +745,7 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
               </Button>
             </Col>
           </Row>
-          
+
           {selectedPath.length > 0 && (
             <div className="route-info bg-light p-3 mb-3 rounded border">
               <h6 className="mb-2">
@@ -578,50 +758,98 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`;
                 </Badge>
                 {selectedPath.join(' → ')}
               </p>
+              {startHub && endHub && (
+                <div className="mt-2 d-flex flex-wrap">
+                  <Badge bg="light" text="dark" className="me-3 mb-1">
+                    <i className="fas fa-bolt me-1"></i>
+                    Express ETA:{' '}
+                    {(totalDistance / CONFIG.SPEED_PROFILE.express).toFixed(
+                      1
+                    )}{' '}
+                    hours
+                  </Badge>
+                  <Badge bg="light" text="dark" className="me-3 mb-1">
+                    <i className="fas fa-truck me-1"></i>
+                    Standard ETA:{' '}
+                    {(totalDistance / CONFIG.SPEED_PROFILE.standard).toFixed(
+                      1
+                    )}{' '}
+                    hours
+                  </Badge>
+                </div>
+              )}
             </div>
           )}
-          
-          <div className="network-container border rounded bg-light" ref={containerRef}>
+
+          <div
+            className="network-container border rounded bg-light"
+            ref={containerRef}
+          >
             <svg ref={svgRef} className="w-100"></svg>
-            <div 
-              ref={tooltipRef} 
-              className="tooltip bg-white p-2 rounded shadow-sm" 
-              style={{
-                position: "absolute",
-                visibility: "hidden",
-                backgroundColor: "white",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                padding: "5px",
-                zIndex: 1000
-              }}
+            <div
+              ref={tooltipRef}
+              className="tooltip-network"
+              style={{ visibility: 'hidden' }}
             />
           </div>
-          
+
           <div className="legend mt-3 d-flex">
             <div className="me-4">
-              <span className="d-inline-block me-2" style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#ef5350" }}></span>
+              <span
+                className="d-inline-block me-2"
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: '#ef5350',
+                }}
+              ></span>
               Major Hub
             </div>
             <div className="me-4">
-              <span className="d-inline-block me-2" style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#90a4ae" }}></span>
+              <span
+                className="d-inline-block me-2"
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: '#90a4ae',
+                }}
+              ></span>
               Sub Hub
             </div>
             <div className="me-4">
-              <span className="d-inline-block me-2" style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: "#d32f2f" }}></span>
+              <span
+                className="d-inline-block me-2"
+                style={{
+                  width: '12px',
+                  height: '12px',
+                  borderRadius: '50%',
+                  backgroundColor: '#d32f2f',
+                }}
+              ></span>
               Path Hub
             </div>
             <div>
-              <span className="d-inline-block me-2" style={{ width: "20px", height: "2px", backgroundColor: "#d32f2f", position: "relative", top: "-3px" }}></span>
+              <span
+                className="d-inline-block me-2"
+                style={{
+                  width: '20px',
+                  height: '2px',
+                  backgroundColor: '#d32f2f',
+                  position: 'relative',
+                  top: '-3px',
+                }}
+              ></span>
               Optimal Route
             </div>
           </div>
-          
+
           <div className="tips mt-3">
             <small className="text-muted">
               <i className="fas fa-info-circle me-1"></i>
-              Click on a hub to set it as the start point, or Ctrl+Click to set as the destination.
-              Hover over hubs and routes for more details.
+              Click on a hub to set it as the start point, or Ctrl+Click to set
+              as the destination. Hover over hubs and routes for more details.
             </small>
           </div>
         </Card.Body>

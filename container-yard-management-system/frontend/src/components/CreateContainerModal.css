@@ -351,25 +351,25 @@
     flex-direction: column;
     gap: 8px;
   }
-  
+
   .container-modal .coordinate-input-group input {
     width: 100%;
   }
-  
+
   .container-modal .modal-body {
     padding: 16px;
   }
-  
+
   .location-inputs {
     padding: 15px;
     margin-bottom: 15px;
   }
-  
+
   /* For mobile, make coordinate containers stack vertically */
   .container-modal .coordinates-container .row {
     flex-direction: column;
   }
-  
+
   .container-modal .coordinates-container .col-md-6 {
     width: 100%;
     min-width: 100%;
