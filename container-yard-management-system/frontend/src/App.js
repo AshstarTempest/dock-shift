@@ -9,6 +9,7 @@ import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
+import RouteVisualizer from './components/RouteVisualizer';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import authentication context
@@ -46,6 +47,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MajorHubs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/route-visualizer"
+            element={
+              <ProtectedRoute>
+                <RouteVisualizer />
               </ProtectedRoute>
             }
           />

@@ -5,10 +5,12 @@ import os
 import requests
 import logging
 import geopy
+import csv
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderUnavailable, GeocoderServiceError
 from tabulate import tabulate
 from flask import jsonify
+from pathlib import Path
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -78,6 +80,91 @@ class GeoCoder:
         except (GeocoderUnavailable, GeocoderServiceError) as e:
             logger.error(f"Geocoding error: {str(e)}")
             return None
+
+
+# Define major Indian hubs for visualization
+indianHubsData = [
+    {
+        'city': 'Mumbai',
+        'state': 'Maharashtra',
+        'coordinates': {'lat': 19.0760, 'lng': 72.8777},
+        'is_major': True,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs', 'rail_connection']
+    },
+    {
+        'city': 'Delhi',
+        'state': 'Delhi',
+        'coordinates': {'lat': 28.7041, 'lng': 77.1025},
+        'is_major': True,
+        'hub_type': 'inland',
+        'facilities': ['container_storage', 'customs', 'rail_connection']
+    },
+    {
+        'city': 'Chennai',
+        'state': 'Tamil Nadu',
+        'coordinates': {'lat': 13.0827, 'lng': 80.2707},
+        'is_major': True,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs', 'rail_connection', 'refrigeration']
+    },
+    {
+        'city': 'Kolkata',
+        'state': 'West Bengal',
+        'coordinates': {'lat': 22.5726, 'lng': 88.3639},
+        'is_major': True,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs', 'rail_connection']
+    },
+    {
+        'city': 'Bangalore',
+        'state': 'Karnataka',
+        'coordinates': {'lat': 12.9716, 'lng': 77.5946},
+        'is_major': False,
+        'hub_type': 'inland',
+        'facilities': ['container_storage', 'rail_connection']
+    },
+    {
+        'city': 'Hyderabad',
+        'state': 'Telangana',
+        'coordinates': {'lat': 17.3850, 'lng': 78.4867},
+        'is_major': False,
+        'hub_type': 'inland',
+        'facilities': ['container_storage']
+    },
+    {
+        'city': 'Ahmedabad',
+        'state': 'Gujarat',
+        'coordinates': {'lat': 23.0225, 'lng': 72.5714},
+        'is_major': False,
+        'hub_type': 'inland',
+        'facilities': ['container_storage', 'rail_connection']
+    },
+    {
+        'city': 'Goa',
+        'state': 'Goa',
+        'coordinates': {'lat': 15.2993, 'lng': 74.1240},
+        'is_major': False,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs']
+    },
+    {
+        'city': 'Visakhapatnam',
+        'state': 'Andhra Pradesh',
+        'coordinates': {'lat': 17.6868, 'lng': 83.2185},
+        'is_major': True,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs', 'rail_connection']
+    },
+    {
+        'city': 'Cochin',
+        'state': 'Kerala',
+        'coordinates': {'lat': 9.9312, 'lng': 76.2673},
+        'is_major': True,
+        'hub_type': 'port',
+        'facilities': ['container_storage', 'customs', 'rail_connection', 'refrigeration']
+    }
+]
 
 
 class RouteOptimizer:
@@ -330,3 +417,114 @@ def generate_logistics_plan(data):
 def get_indian_states():
     """Returns a dictionary of Indian states for use in forms."""
     return StateSelector.get_states()
+
+def get_hubs_data():
+    """
+    Returns hardcoded hub data from the CSV files
+    Returns:
+        tuple: (major_hubs_dict, hubs_dict)
+    """
+    logger.info("Using hardcoded hub data")
+    
+    # Define states as major hubs (from major_hubs_india.csv)
+    major_hubs = {
+        "1": {"name": "Andhra Pradesh", "coordinates": {"lat": 16.504347, "lng": 80.645843}},
+        "2": {"name": "Arunachal Pradesh", "coordinates": {"lat": 27.091086, "lng": 93.596806}},
+        "3": {"name": "Assam", "coordinates": {"lat": 26.135341, "lng": 91.735217}},
+        "4": {"name": "Bihar", "coordinates": {"lat": 25.587789, "lng": 85.142771}},
+        "5": {"name": "Chhattisgarh", "coordinates": {"lat": 21.241661, "lng": 81.638798}},
+        "6": {"name": "Goa", "coordinates": {"lat": 15.482654, "lng": 73.833124}},
+        "7": {"name": "Gujarat", "coordinates": {"lat": 23.030405, "lng": 72.562137}},
+        "8": {"name": "Haryana", "coordinates": {"lat": 28.465335, "lng": 77.025125}},
+        "9": {"name": "Himachal Pradesh", "coordinates": {"lat": 31.106605, "lng": 77.180773}},
+        "10": {"name": "Jharkhand", "coordinates": {"lat": 23.348013, "lng": 85.314384}},
+        "11": {"name": "Karnataka", "coordinates": {"lat": 12.97365, "lng": 77.590186}},
+        "12": {"name": "Kerala", "coordinates": {"lat": 9.929815, "lng": 76.277007}},
+        "13": {"name": "Madhya Pradesh", "coordinates": {"lat": 22.714174, "lng": 75.854346}},
+        "14": {"name": "Maharashtra", "coordinates": {"lat": 19.069646, "lng": 72.880307}},
+        "15": {"name": "Manipur", "coordinates": {"lat": 24.813476, "lng": 93.944452}},
+        "16": {"name": "Meghalaya", "coordinates": {"lat": 25.578503, "lng": 91.891416}},
+        "17": {"name": "Mizoram", "coordinates": {"lat": 23.73101, "lng": 92.711071}},
+        "18": {"name": "Nagaland", "coordinates": {"lat": 25.896172, "lng": 93.718831}},
+        "19": {"name": "Odisha", "coordinates": {"lat": 20.297132, "lng": 85.830375}},
+        "20": {"name": "Punjab", "coordinates": {"lat": 30.90374, "lng": 75.857833}},
+        "21": {"name": "Rajasthan", "coordinates": {"lat": 26.921195, "lng": 75.784667}},
+        "22": {"name": "Sikkim", "coordinates": {"lat": 27.324654, "lng": 88.613151}},
+        "23": {"name": "Tamil Nadu", "coordinates": {"lat": 13.084113, "lng": 80.267506}},
+        "24": {"name": "Telangana", "coordinates": {"lat": 17.379828, "lng": 78.489978}},
+        "25": {"name": "Tripura", "coordinates": {"lat": 23.835036, "lng": 91.278077}},
+        "26": {"name": "Uttar Pradesh", "coordinates": {"lat": 26.84023, "lng": 80.950943}},
+        "27": {"name": "Uttarakhand", "coordinates": {"lat": 30.319949, "lng": 78.032139}},
+        "28": {"name": "West Bengal", "coordinates": {"lat": 22.565836, "lng": 88.363023}},
+        "29": {"name": "Delhi", "coordinates": {"lat": 28.613407, "lng": 77.216016}},
+        "30": {"name": "Jammu and Kashmir", "coordinates": {"lat": 34.08646, "lng": 74.800107}},
+        "31": {"name": "Ladakh", "coordinates": {"lat": 34.162043, "lng": 77.577688}}
+    }
+    
+    # Define cities as hubs within major hubs (from expanded_major_hubs.csv)
+    hubs = {
+        # West Bengal (ID: 28)
+        "28": [
+            {"id": "28_1", "name": "Kolkata", "coordinates": {"lat": 22.572912, "lng": 88.361454}},
+            {"id": "28_2", "name": "Howrah", "coordinates": {"lat": 22.587306, "lng": 88.258067}},
+            {"id": "28_3", "name": "Durgapur", "coordinates": {"lat": 23.521529, "lng": 87.305634}},
+            {"id": "28_4", "name": "Asansol", "coordinates": {"lat": 23.669562, "lng": 86.943659}},
+            {"id": "28_5", "name": "Siliguri", "coordinates": {"lat": 26.726044, "lng": 88.394222}},
+            {"id": "28_6", "name": "Darjeeling", "coordinates": {"lat": 27.044137, "lng": 88.269625}},
+            {"id": "28_7", "name": "Kharagpur", "coordinates": {"lat": 22.349619, "lng": 87.236139}},
+            {"id": "28_8", "name": "Haldia", "coordinates": {"lat": 22.064258, "lng": 88.11926}},
+            {"id": "28_9", "name": "Malda", "coordinates": {"lat": 25.017916, "lng": 88.139606}},
+            {"id": "28_10", "name": "Bardhaman", "coordinates": {"lat": 23.232716, "lng": 87.85383}}
+        ],
+        # Odisha (ID: 19)
+        "19": [
+            {"id": "19_1", "name": "Bhubaneswar", "coordinates": {"lat": 20.286648, "lng": 85.819319}},
+            {"id": "19_2", "name": "Cuttack", "coordinates": {"lat": 20.471047, "lng": 85.87992}},
+            {"id": "19_3", "name": "Rourkela", "coordinates": {"lat": 22.258521, "lng": 84.847716}},
+            {"id": "19_4", "name": "Sambalpur", "coordinates": {"lat": 21.464943, "lng": 83.977969}},
+            {"id": "19_5", "name": "Berhampur", "coordinates": {"lat": 19.315731, "lng": 84.792629}},
+            {"id": "19_6", "name": "Puri", "coordinates": {"lat": 19.810011, "lng": 85.827176}},
+            {"id": "19_7", "name": "Balasore", "coordinates": {"lat": 21.494781, "lng": 86.941383}},
+            {"id": "19_8", "name": "Jharsuguda", "coordinates": {"lat": 21.861882, "lng": 84.015541}},
+            {"id": "19_9", "name": "Angul", "coordinates": {"lat": 20.848924, "lng": 85.106252}},
+            {"id": "19_10", "name": "Baripada", "coordinates": {"lat": 21.928826, "lng": 86.733417}}
+        ],
+        # Maharashtra (ID: 14)
+        "14": [
+            {"id": "14_1", "name": "Mumbai", "coordinates": {"lat": 19.073313, "lng": 72.873124}},
+            {"id": "14_2", "name": "Pune", "coordinates": {"lat": 18.526, "lng": 73.862396}},
+            {"id": "14_3", "name": "Nagpur", "coordinates": {"lat": 21.15335, "lng": 79.095673}},
+            {"id": "14_4", "name": "Nashik", "coordinates": {"lat": 20.005171, "lng": 73.795204}},
+            {"id": "14_5", "name": "Thane", "coordinates": {"lat": 19.226139, "lng": 72.988056}},
+            {"id": "14_6", "name": "Aurangabad", "coordinates": {"lat": 19.877461, "lng": 75.350927}},
+            {"id": "14_7", "name": "Solapur", "coordinates": {"lat": 17.65678, "lng": 75.907452}},
+            {"id": "14_8", "name": "Amravati", "coordinates": {"lat": 20.933012, "lng": 77.774769}},
+            {"id": "14_9", "name": "Kolhapur", "coordinates": {"lat": 16.699147, "lng": 74.235303}},
+            {"id": "14_10", "name": "Navi Mumbai", "coordinates": {"lat": 19.033618, "lng": 73.035662}}
+        ]
+    }
+    
+    # Add some sample cities for other states to have more options in the UI
+    # Delhi (ID: 29)
+    hubs["29"] = [
+        {"id": "29_1", "name": "New Delhi", "coordinates": {"lat": 28.613407, "lng": 77.216016}},
+        {"id": "29_2", "name": "South Delhi", "coordinates": {"lat": 28.543145, "lng": 77.160732}},
+        {"id": "29_3", "name": "North Delhi", "coordinates": {"lat": 28.679142, "lng": 77.209021}}
+    ]
+    
+    # Gujarat (ID: 7)
+    hubs["7"] = [
+        {"id": "7_1", "name": "Ahmedabad", "coordinates": {"lat": 23.030405, "lng": 72.562137}},
+        {"id": "7_2", "name": "Surat", "coordinates": {"lat": 21.197096, "lng": 72.840075}},
+        {"id": "7_3", "name": "Vadodara", "coordinates": {"lat": 22.310696, "lng": 73.192635}},
+        {"id": "7_4", "name": "Rajkot", "coordinates": {"lat": 22.291606, "lng": 70.793217}}
+    ]
+    
+    # Tamil Nadu (ID: 23)
+    hubs["23"] = [
+        {"id": "23_1", "name": "Chennai", "coordinates": {"lat": 13.084113, "lng": 80.267506}},
+        {"id": "23_2", "name": "Coimbatore", "coordinates": {"lat": 11.016844, "lng": 76.955832}},
+        {"id": "23_3", "name": "Madurai", "coordinates": {"lat": 9.925201, "lng": 78.119775}}
+    ]
+    
+    return major_hubs, hubs

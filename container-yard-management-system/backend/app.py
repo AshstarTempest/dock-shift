@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from models import db, User
 from routes.logistics_routes import logistics_bp
+from routes.visualization_routes import visualization_bp
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
@@ -22,6 +23,10 @@ CORS(app, supports_credentials=True)
 
 # Register blueprints
 app.register_blueprint(logistics_bp)
+app.register_blueprint(visualization_bp)
+
+# Create static directory for maps if it doesn't exist
+os.makedirs(os.path.join(app.root_path, 'static', 'maps'), exist_ok=True)
 
 # Setup Flask-Login
 login_manager = LoginManager()
