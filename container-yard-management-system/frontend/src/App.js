@@ -1,12 +1,14 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './styles/App.css';
+import './styles/ModularDashboard.css';
 
 // Import components
 import Home from './components/Home';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
+import ModularDashboard from './components/ModularDashboard';
 import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
 import RouteVisualizer from './components/RouteVisualizer';
@@ -33,6 +35,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/modern-dashboard"
+            element={
+              <ProtectedRoute>
+                <ModularDashboard />
               </ProtectedRoute>
             }
           />
