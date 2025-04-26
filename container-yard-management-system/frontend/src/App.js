@@ -11,6 +11,7 @@ import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
 import RouteVisualizer from './components/RouteVisualizer';
 import Inventories from './components/Inventories';
+import Containers from './components/Containers';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import authentication context
@@ -64,6 +65,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Inventories />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/containers"
+            element={
+              <ProtectedRoute>
+                <Containers />
               </ProtectedRoute>
             }
           />
