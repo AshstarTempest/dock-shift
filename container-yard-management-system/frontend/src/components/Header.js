@@ -316,7 +316,28 @@ const Header = () => {
                       </svg>
                       Route Visualizer
                     </Link>
+                    <Link to="/inventory" className="user-dropdown-item">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1z"></path>
+                        <path d="M16 10v-2a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"></path>
+                        <path d="M8 14h.01"></path>
+                        <path d="M12 14h.01"></path>
+                        <path d="M16 14h.01"></path>
+                      </svg>
+                      Inventory
+                    </Link>
                     <Link to="/settings" className="user-dropdown-item">
+                      "
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="18"
