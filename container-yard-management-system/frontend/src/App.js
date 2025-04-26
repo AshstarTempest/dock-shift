@@ -7,6 +7,8 @@ import Home from './components/Home';
 import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
+import Profile from './components/Profile';
+import MajorHubs from './components/MajorHubs';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import authentication context
@@ -28,6 +30,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/major-hubs"
+            element={
+              <ProtectedRoute>
+                <MajorHubs />
               </ProtectedRoute>
             }
           />
