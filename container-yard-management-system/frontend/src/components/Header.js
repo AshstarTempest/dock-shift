@@ -380,7 +380,10 @@ const Header = () => {
                       </svg>
                       Containers
                     </Link>
-                    <Link to="/unified-dashboard" className="user-dropdown-item">
+                    <Link
+                      to="/unified-dashboard"
+                      className="user-dropdown-item"
+                    >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="18"

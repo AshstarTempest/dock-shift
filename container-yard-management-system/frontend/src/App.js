@@ -13,9 +13,11 @@ import UnifiedDashboard from './components/UnifiedDashboard';
 import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
 import RouteVisualizer from './components/RouteVisualizer';
+import RouteOptimizationPage from './components/RouteOptimizationPage';
 import Inventories from './components/Inventories';
 import Containers from './components/Containers';
 import ProtectedRoute from './components/ProtectedRoute';
+import Header from './components/Header';
 
 // Import authentication context
 import { AuthProvider } from './contexts/AuthContext';
@@ -51,7 +53,12 @@ function App() {
             path="/unified-dashboard"
             element={
               <ProtectedRoute>
-                <UnifiedDashboard />
+                <div className="app-container">
+                  <Header />
+                  <div className="main-content-container">
+                    <UnifiedDashboard />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
@@ -76,6 +83,19 @@ function App() {
             element={
               <ProtectedRoute>
                 <RouteVisualizer />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/route-optimization"
+            element={
+              <ProtectedRoute>
+                <div className="app-container">
+                  <Header />
+                  <div className="main-content-container">
+                    <RouteOptimizationPage />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />

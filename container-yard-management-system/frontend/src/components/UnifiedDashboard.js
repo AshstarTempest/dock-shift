@@ -1,947 +1,689 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { ResizableBox } from 'react-resizable';
-import 'react-resizable/css/styles.css';
-import Header from './Header';
-import MSTVisualizer from './MSTVisualizer';
+import { useNavigate, useLocation } from 'react-router-dom';
+import axios from 'axios';
+import '../styles/App.css';
 import '../styles/ModularDashboard.css';
+import { Alert } from 'react-bootstrap';
 
-// Container Card Component
-const ContainerCard = ({
-  container,
-  onDispatch,
-  onMarkUrgent,
-  onAddProduct,
-}) => {
-  const getStatusClass = (status) => {
-    status = status.toLowerCase().replace(/\s+/g, '-');
-    if (status === 'in-transit') return 'in-transit';
-    if (status === 'at-yard' || status === 'in-yard') return 'in-yard';
-    if (status === 'delivered') return 'delivered';
-    return '';
-  };
+// Import our custom components
+import MapPicker from './MapPicker';
+import CreateContainerModal from './CreateContainerModal';
 
-  // Fill percentage with default value
-  const fillPercentage = container.fill_percentage || 0;
-
-  // Determine if container is ready for dispatch based on urgency and fill level
-  const isUrgent = container.is_urgent || false;
-  const dispatchThreshold = isUrgent ? 50 : 90;
-  const isReadyForDispatch = fillPercentage >= dispatchThreshold;
-
-  // Get color for fill bar
-  const getFillColor = () => {
-    if (fillPercentage >= 90) return '#e53935'; // Red for very full
-    if (fillPercentage >= 75) return '#ff9800'; // Orange for mostly full
-    if (fillPercentage >= 50) return '#4caf50'; // Green for half full
-    return '#2196f3'; // Blue for low fill
-  };
-
-  // Handle the dispatch button click
-  const handleDispatch = () => {
-    if (onDispatch && isReadyForDispatch) {
-      onDispatch(container.id);
-    }
-  };
-
-  // Handle marking container as urgent
-  const handleMarkUrgent = () => {
-    if (onMarkUrgent) {
-      onMarkUrgent(container.id, true);
-    }
-  };
-
-  // Handle adding a product to the container
-  const handleAddProduct = () => {
-    if (onAddProduct) {
-      onAddProduct(container.id);
-    }
-  };
-
-  return (
-    <div className={`container-card ${isUrgent ? 'urgent' : ''}`}>
-      <div className="container-card-header">
-        <span className="container-id">{container.id}</span>
-        <span
-          className={`container-status ${getStatusClass(container.status)}`}
-        >
-          {container.status}
-        </span>
-        {isUrgent && (
-          <span className="urgency-badge">
-            <i className="fas fa-exclamation-circle"></i> URGENT
-          </span>
-        )}
-      </div>
-
-      {/* Fill percentage indicator */}
-      <div className="fill-percentage-container">
-        <div className="fill-percentage-bar-container">
-          <div
-            className="fill-percentage-bar"
-            style={{
-              width: `${fillPercentage}%`,
-              backgroundColor: getFillColor(),
-            }}
-          ></div>
-          {/* Threshold indicator */}
-          <div
-            className="dispatch-threshold"
-            style={{ left: `${dispatchThreshold}%` }}
-            title={`Dispatch at ${dispatchThreshold}%`}
-          ></div>
-        </div>
-        <div className="fill-percentage-text">
-          {fillPercentage}% filled
-          {isReadyForDispatch && <span className="dispatch-ready"> READY</span>}
-        </div>
-      </div>
-
-      <div className="container-content">
-        <div className="container-detail">
-          <span className="detail-label">Type:</span>
-          <span className="detail-value">{container.type || '40HQ'}</span>
-        </div>
-        <div className="container-detail">
-          <span className="detail-label">Location:</span>
-          <span className="detail-value">
-            {container.location || 'Block A, Row 3, Slot 12'}
-          </span>
-        </div>
-        <div className="container-detail">
-          <span className="detail-label">Arrival:</span>
-          <span className="detail-value">
-            {container.arrival_date || container.arrival || '4/20/2025'}
-          </span>
-        </div>
-        <div className="container-detail">
-          <span className="detail-label">Departure:</span>
-          <span className="detail-value">
-            {container.departure_date || container.departure || 'Not scheduled'}
-          </span>
-        </div>
-        <div className="container-detail">
-          <span className="detail-label">Contents:</span>
-          <span className="detail-value">
-            {container.contents_description ||
-              (container.contents && Array.isArray(container.contents)
-                ? `${container.contents.length} items`
-                : container.contents || 'Empty')}
-          </span>
-        </div>
-        <div className="container-detail">
-          <span className="detail-label">Weight:</span>
-          <span className="detail-value">
-            {container.total_weight ? `${container.total_weight} kg` : 'N/A'}
-          </span>
-        </div>
-      </div>
-      <div className="container-actions">
-        <button
-          className="container-action-btn view"
-          onClick={handleAddProduct}
-        >
-          <i className="fas fa-plus"></i>
-          Add Product
-        </button>
-        {isReadyForDispatch && (
-          <button
-            className="container-action-btn dispatch"
-            onClick={handleDispatch}
-          >
-            <i className="fas fa-shipping-fast"></i>
-            Dispatch
-          </button>
-        )}
-        {!isReadyForDispatch && !isUrgent && (
-          <button
-            className="container-action-btn set-urgent"
-            onClick={handleMarkUrgent}
-          >
-            <i className="fas fa-exclamation-triangle"></i>
-            Mark Urgent
-          </button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Product Modal Component for adding products to containers
-const ProductModal = ({ show, onClose, onAddProduct, containerId }) => {
-  const [product, setProduct] = useState({
-    name: '',
-    weight: 0,
-    volume: 0,
-    description: '',
-  });
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setProduct((prev) => ({
-      ...prev,
-      [name]:
-        name === 'name' || name === 'description' ? value : parseFloat(value),
-    }));
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onAddProduct(containerId, product);
-    onClose();
-  };
-
-  if (!show) return null;
-
-  return (
-    <div className="modal-overlay">
-      <div className="product-modal">
-        <div className="modal-header">
-          <h3>Add Product to Container {containerId}</h3>
-          <button className="close-button" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Product Name</label>
-            <input
-              type="text"
-              name="name"
-              value={product.name}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Weight (kg)</label>
-            <input
-              type="number"
-              name="weight"
-              value={product.weight}
-              onChange={handleChange}
-              min="0.1"
-              step="0.1"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Volume (cubic meters)</label>
-            <input
-              type="number"
-              name="volume"
-              value={product.volume}
-              onChange={handleChange}
-              min="0.01"
-              step="0.01"
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Description</label>
-            <textarea
-              name="description"
-              value={product.description}
-              onChange={handleChange}
-            ></textarea>
-          </div>
-          <div className="form-actions">
-            <button type="button" onClick={onClose} className="btn-cancel">
-              Cancel
-            </button>
-            <button type="submit" className="btn-submit">
-              Add Product
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-// Container Management Dashboard Component
-const ContainerManagementDashboard = ({
-  containers,
-  onDispatch,
-  onMarkUrgent,
-  onAddProduct,
-}) => {
-  const [showProductModal, setShowProductModal] = useState(false);
-  const [selectedContainer, setSelectedContainer] = useState(null);
-
-  const handleAddProductClick = (containerId) => {
-    setSelectedContainer(containerId);
-    setShowProductModal(true);
-  };
-
-  const handleProductAdd = (containerId, product) => {
-    onAddProduct(containerId, product);
-  };
-
-  return (
-    <div className="container-management-dashboard">
-      <h2>Container Management</h2>
-      <p className="dashboard-subtitle">
-        Monitor and manage every container with detailed tracking and status
-        information
-      </p>
-
-      {containers.length === 0 ? (
-        <div className="no-containers">
-          <i className="fas fa-shipping-fast fa-3x"></i>
-          <p>No containers available. Create a new container to get started.</p>
-        </div>
-      ) : (
-        <div className="container-cards-grid">
-          {containers.map((container) => (
-            <ContainerCard
-              key={container.id}
-              container={container}
-              onDispatch={onDispatch}
-              onMarkUrgent={onMarkUrgent}
-              onAddProduct={handleAddProductClick}
-            />
-          ))}
-        </div>
-      )}
-
-      <ProductModal
-        show={showProductModal}
-        onClose={() => setShowProductModal(false)}
-        onAddProduct={handleProductAdd}
-        containerId={selectedContainer}
-      />
-    </div>
-  );
-};
-
-// Network Dashboard Component
-const NetworkDashboard = ({ mstData, selectedPath }) => {
-  return (
-    <div className="network-dashboard">
-      <h2>Network Optimization</h2>
-      <p className="dashboard-subtitle">
-        Visualize the Minimum Spanning Tree (MST) network connecting all hubs
-      </p>
-
-      <div className="visualizer-container">
-        <MSTVisualizer mstData={mstData} selectedPath={selectedPath} />
-      </div>
-    </div>
-  );
-};
-
-// Dashboard Command Bar Component
-const CommandBar = ({ onSearchChange, activeModule, setActiveModule }) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const { currentUser } = useAuth();
-
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-    if (onSearchChange) {
-      onSearchChange(e.target.value);
-    }
-  };
-
-  const currentTime = new Date();
-  const currentHour = currentTime.getHours();
-  let greeting = 'Good morning';
-
-  if (currentHour >= 12 && currentHour < 17) {
-    greeting = 'Good afternoon';
-  } else if (currentHour >= 17) {
-    greeting = 'Good evening';
-  }
-
-  return (
-    <div className="command-bar">
-      <div className="greeting-section">
-        <h2>
-          {greeting}, {currentUser?.firstName || 'User'}
-        </h2>
-        <p className="date-display">
-          {currentTime.toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </p>
-      </div>
-
-      <div className="search-section">
-        <div className="search-container">
-          <i className="fas fa-search search-icon"></i>
-          <input
-            type="text"
-            placeholder="Search across containers, inventory, routes..."
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="search-input"
-          />
-          <button className="voice-search">
-            <i className="fas fa-microphone"></i>
-          </button>
-        </div>
-      </div>
-
-      <div className="module-selector">
-        <button
-          className={`module-button ${
-            activeModule === 'network' ? 'active' : ''
-          }`}
-          onClick={() => setActiveModule('network')}
-        >
-          <i className="fas fa-project-diagram"></i>
-          <span>Network</span>
-        </button>
-        <button
-          className={`module-button ${
-            activeModule === 'containers' ? 'active' : ''
-          }`}
-          onClick={() => setActiveModule('containers')}
-        >
-          <i className="fas fa-shipping-fast"></i>
-          <span>Containers</span>
-        </button>
-        <button
-          className={`module-button ${
-            activeModule === 'dispatch' ? 'active' : ''
-          }`}
-          onClick={() => setActiveModule('dispatch')}
-        >
-          <i className="fas fa-truck-loading"></i>
-          <span>Dispatch</span>
-        </button>
-      </div>
-
-      <div className="quick-actions">
-        <button className="action-button">
-          <i className="fas fa-plus"></i>
-          <span>New</span>
-        </button>
-        <button className="action-button">
-          <i className="fas fa-cog"></i>
-        </button>
-        <button className="action-button notification">
-          <i className="fas fa-bell"></i>
-          <span className="notification-badge">3</span>
-        </button>
-      </div>
-    </div>
-  );
-};
-
-// Stats Overview Component
-const StatsOverview = ({ stats }) => {
-  return (
-    <div className="stats-overview">
-      <div className="stat-card total">
-        <div className="stat-icon">
-          <i className="fas fa-cubes"></i>
-        </div>
-        <div className="stat-details">
-          <span className="stat-value">{stats.totalContainers}</span>
-          <span className="stat-label">Total Containers</span>
-        </div>
-        <div className="stat-trend positive">
-          <i className="fas fa-arrow-up"></i>
-          <span>4%</span>
-        </div>
-      </div>
-
-      <div className="stat-card transit">
-        <div className="stat-icon">
-          <i className="fas fa-shipping-fast"></i>
-        </div>
-        <div className="stat-details">
-          <span className="stat-value">{stats.inTransit}</span>
-          <span className="stat-label">In Transit</span>
-        </div>
-        <div className="stat-trend positive">
-          <i className="fas fa-arrow-up"></i>
-          <span>7%</span>
-        </div>
-      </div>
-
-      <div className="stat-card yard">
-        <div className="stat-icon">
-          <i className="fas fa-warehouse"></i>
-        </div>
-        <div className="stat-details">
-          <span className="stat-value">{stats.atYard}</span>
-          <span className="stat-label">At Yard</span>
-        </div>
-        <div className="stat-trend negative">
-          <i className="fas fa-arrow-down"></i>
-          <span>2%</span>
-        </div>
-      </div>
-
-      <div className="stat-card delivered">
-        <div className="stat-icon">
-          <i className="fas fa-check-circle"></i>
-        </div>
-        <div className="stat-details">
-          <span className="stat-value">
-            {stats.readyForDispatch || stats.delivered}
-          </span>
-          <span className="stat-label">Ready for Dispatch</span>
-        </div>
-        <div className="stat-trend positive">
-          <i className="fas fa-arrow-up"></i>
-          <span>12%</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Create Container Form Component
-const CreateContainerForm = ({ onCreateContainer, onClose }) => {
-  const [containerData, setContainerData] = useState({
-    type: '40HQ',
-    location: '',
-    hub_id: '',
-  });
-  const [hubs, setHubs] = useState({});
-  const [majorHubs, setMajorHubs] = useState({});
-  const [selectedMajorHub, setSelectedMajorHub] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Fetch hubs data
-  useEffect(() => {
-    const fetchHubs = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch(
-          'http://localhost:5000/api/logistics/hubs',
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch hubs data');
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          setMajorHubs(data.majorHubs);
-          setHubs(data.hubs);
-        }
-      } catch (error) {
-        console.error('Error fetching hubs:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchHubs();
-  }, []);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    if (name === 'majorHub') {
-      setSelectedMajorHub(value);
-      setContainerData((prev) => ({ ...prev, hub_id: '' }));
-    } else {
-      setContainerData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onCreateContainer(containerData);
-    onClose();
-  };
-
-  return (
-    <div className="modal-overlay">
-      <div className="product-modal">
-        <div className="modal-header">
-          <h3>Create New Container</h3>
-          <button className="close-button" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading hubs data...</p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Container Type</label>
-              <select
-                name="type"
-                value={containerData.type}
-                onChange={handleChange}
-                required
-              >
-                <option value="20GP">20GP - General Purpose</option>
-                <option value="40HQ">40HQ - High Cube</option>
-                <option value="40RF">40RF - Refrigerated</option>
-                <option value="20TK">20TK - Tank Container</option>
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Major Hub</label>
-              <select
-                name="majorHub"
-                value={selectedMajorHub}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select a major hub</option>
-                {Object.entries(majorHubs).map(([id, hub]) => (
-                  <option key={id} value={id}>
-                    {hub.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Hub</label>
-              <select
-                name="hub_id"
-                value={containerData.hub_id}
-                onChange={handleChange}
-                disabled={!selectedMajorHub}
-                required
-              >
-                <option value="">Select a hub</option>
-                {selectedMajorHub &&
-                  hubs[selectedMajorHub]?.map((hub) => (
-                    <option key={hub.id} value={hub.id}>
-                      {hub.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label>Location Description</label>
-              <input
-                type="text"
-                name="location"
-                value={containerData.location}
-                onChange={handleChange}
-                placeholder="e.g., Block A, Row 3, Slot 12"
-                required
-              />
-            </div>
-
-            <div className="form-actions">
-              <button type="button" onClick={onClose} className="btn-cancel">
-                Cancel
-              </button>
-              <button type="submit" className="btn-submit">
-                Create Container
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Main Dashboard Component
 const UnifiedDashboard = () => {
-  const [activeModule, setActiveModule] = useState('containers');
-  const [dashboardStats, setDashboardStats] = useState(null);
+  const navigate = useNavigate();
+  const location = useLocation();
   const [containers, setContainers] = useState([]);
-  const [mstData, setMstData] = useState(null);
-  const [selectedPath, setSelectedPath] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [majorHubs, setMajorHubs] = useState([]);
+  const [hubs, setHubs] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedContainer, setSelectedContainer] = useState(null);
+  const [activeTab, setActiveTab] = useState('containers');
+  const [mstData, setMstData] = useState(null);
+  const [notification, setNotification] = useState(null);
 
-  // Fetch initial dashboard data
+  // Fetch required data on component mount
   useEffect(() => {
-    fetchDashboardData();
     fetchContainers();
-    fetchMstData();
-  }, []);
+    fetchHubs();
+    fetchMSTData();
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // In a real implementation, fetch from your API
-      // Here, use mock data
-      setDashboardStats({
-        totalContainers: 125,
-        inTransit: 43,
-        atYard: 67,
-        readyForDispatch: 15,
+    // Check for messages from route navigation (like after dispatching a container)
+    if (location.state?.success) {
+      setNotification({
+        type: 'success',
+        message: location.state.message,
       });
-    } catch (err) {
-      console.error('Dashboard data fetch error:', err);
-      setError('Error loading dashboard statistics');
-    } finally {
-      setLoading(false);
-    }
-  };
 
+      // Clear location state after showing the notification
+      window.history.replaceState({}, document.title);
+
+      // Auto-dismiss notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    }
+  }, [location]);
+
+  // Fetch containers data
   const fetchContainers = async () => {
     try {
-      // In a real implementation, fetch from your API
-      // For this demonstration, use mock data with different fill percentages
-      const mockContainers = [
-        {
-          id: 'C1042',
-          status: 'In Yard',
-          type: '40HQ',
-          fill_percentage: 85,
-          location: 'Block A, Row 3, Slot 12',
-          arrival_date: '2025-04-20',
-          contents: 'Electronics',
-          total_weight: 15000,
-        },
-        {
-          id: 'C7589',
-          status: 'In Transit',
-          type: '20GP',
-          fill_percentage: 100,
-          location: 'En route to yard',
-          arrival_date: '2025-04-26',
-          contents: 'Automotive Parts',
-          total_weight: 8500,
-        },
-        {
-          id: 'C2305',
-          status: 'In Yard',
-          type: '40RF',
-          fill_percentage: 45,
-          is_urgent: true,
-          location: 'Block C, Row 1, Slot 4',
-          arrival_date: '2025-04-18',
-          contents: 'Perishable Goods',
-          total_weight: 12000,
-        },
-        {
-          id: 'C8912',
-          status: 'In Yard',
-          type: '40HQ',
-          fill_percentage: 92,
-          location: 'Block B, Row 5, Slot 2',
-          arrival_date: '2025-04-15',
-          contents: 'Furniture',
-          total_weight: 18000,
-        },
-      ];
-
-      setContainers(mockContainers);
-    } catch (err) {
-      console.error('Container data fetch error:', err);
-      setError('Error loading containers');
+      const response = await axios.get('/api/containers');
+      if (response.data.success) {
+        setContainers(response.data.containers);
+      } else {
+        // For demo/development, use mock data
+        setContainers([
+          {
+            id: 'MAEU1234567',
+            container_id: 'MAEU1234567',
+            type: '20GP',
+            status: 'In Yard',
+            major_hub: 'mumbai_hub',
+            hub: 'mumbai_north',
+            contents: 'Electronics',
+            notes: 'Handle with care',
+            fill_percentage: 75,
+            priority: 'normal',
+            pickup_lat: '19.0760',
+            pickup_lng: '72.8777',
+            drop_lat: '18.5204',
+            drop_lng: '73.8567',
+            pickup_address: 'Mumbai Port',
+            drop_address: 'Pune Logistics Hub',
+          },
+          {
+            id: 'CMAU7654321',
+            container_id: 'CMAU7654321',
+            type: '40HC',
+            status: 'In Transit',
+            major_hub: 'delhi_hub',
+            hub: 'delhi_tughlakabad',
+            contents: 'Textiles',
+            notes: '',
+            fill_percentage: 90,
+            priority: 'high',
+            pickup_lat: '28.7041',
+            pickup_lng: '77.1025',
+            drop_lat: '20.2961',
+            drop_lng: '85.8245',
+            pickup_address: 'Delhi Hub',
+            drop_address: 'Bhubaneswar, Odisha',
+          },
+          {
+            id: 'HLXU5432198',
+            container_id: 'HLXU5432198',
+            type: '40RF',
+            status: 'Delivered',
+            major_hub: 'chennai_hub',
+            hub: 'chennai_port',
+            contents: 'Perishable Goods',
+            notes: 'Temperature controlled',
+            fill_percentage: 65,
+            priority: 'urgent',
+            pickup_lat: '13.0827',
+            pickup_lng: '80.2707',
+            drop_lat: '12.9716',
+            drop_lng: '77.5946',
+            pickup_address: 'Chennai Port',
+            drop_address: 'Bangalore City',
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching containers:', error);
     }
   };
 
-  const fetchMstData = async () => {
+  // Fetch hubs data
+  const fetchHubs = async () => {
     try {
-      // In a real implementation, fetch from your API
-      // For this demonstration, use mock MST data
-      setMstData({
-        mst: [
-          { source: '28_1', target: '28_2', distance: 12.5 },
-          { source: '28_2', target: '28_3', distance: 58.7 },
-          { source: '28_3', target: '28_4', distance: 26.3 },
-          { source: '28_1', target: '19_1', distance: 130.2 },
-          { source: '19_1', target: '19_2', distance: 25.8 },
-          { source: '19_2', target: '19_3', distance: 150.4 },
-          { source: '19_1', target: '14_2', distance: 340.6 },
-        ],
-        totalDistance: 744.5,
-        edgeCount: 7,
+      const response = await axios.get('/api/logistics/hubs');
+      if (response.data?.success) {
+        setMajorHubs(response.data.majorHubs);
+        setHubs(response.data.hubs);
+      } else {
+        // Mock data for development
+        setMajorHubs([
+          { id: 'mumbai_hub', name: 'Mumbai Container Terminal' },
+          { id: 'delhi_hub', name: 'Delhi Inland Container Depot' },
+          { id: 'chennai_hub', name: 'Chennai Port Terminal' },
+          { id: 'kolkata_hub', name: 'Kolkata Container Facility' },
+          { id: 'bangalore_hub', name: 'Bangalore Logistics Park' },
+        ]);
+
+        setHubs([
+          {
+            id: 'mumbai_north',
+            name: 'Mumbai North Terminal',
+            major_hub: 'mumbai_hub',
+          },
+          {
+            id: 'mumbai_south',
+            name: 'Mumbai South Terminal',
+            major_hub: 'mumbai_hub',
+          },
+          {
+            id: 'delhi_tughlakabad',
+            name: 'Tughlakabad ICD',
+            major_hub: 'delhi_hub',
+          },
+          {
+            id: 'delhi_patparganj',
+            name: 'Patparganj ICD',
+            major_hub: 'delhi_hub',
+          },
+          {
+            id: 'chennai_port',
+            name: 'Chennai Port',
+            major_hub: 'chennai_hub',
+          },
+          {
+            id: 'kolkata_dock',
+            name: 'Kolkata Dock System',
+            major_hub: 'kolkata_hub',
+          },
+          {
+            id: 'whitefield',
+            name: 'Whitefield ICD',
+            major_hub: 'bangalore_hub',
+          },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error fetching hubs:', error);
+    }
+  };
+
+  // Fetch MST data for visualization
+  const fetchMSTData = async () => {
+    try {
+      const response = await axios.get('/api/logistics/mst');
+      if (response.data?.success) {
+        setMstData(response.data.mst);
+      } else {
+        // Mock MST data for development
+        setMstData({
+          nodeCount: 12,
+          edgeCount: 11,
+          totalDistance: 2680.42,
+          nodes: [
+            { id: 'mumbai_hub', lat: 19.076, lng: 72.8777 },
+            { id: 'delhi_hub', lat: 28.7041, lng: 77.1025 },
+            { id: 'chennai_hub', lat: 13.0827, lng: 80.2707 },
+            { id: 'kolkata_hub', lat: 22.5726, lng: 88.3639 },
+            { id: 'bangalore_hub', lat: 12.9716, lng: 77.5946 },
+          ],
+          edges: [
+            { from: 'mumbai_hub', to: 'delhi_hub', distance: 1163 },
+            { from: 'delhi_hub', to: 'kolkata_hub', distance: 1304 },
+            { from: 'kolkata_hub', to: 'chennai_hub', distance: 1369 },
+            { from: 'chennai_hub', to: 'bangalore_hub', distance: 335 },
+          ],
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching MST data:', error);
+    }
+  };
+
+  // Open container creation modal
+  const openCreateModal = () => {
+    setSelectedContainer(null);
+    setShowCreateModal(true);
+  };
+
+  // Handle container save from modal
+  const handleSaveContainer = async (containerData) => {
+    try {
+      // In a real implementation, this would call an API endpoint
+      const isNewContainer = !selectedContainer;
+      let updatedContainer;
+
+      if (isNewContainer) {
+        // For demo purposes, just add the container to state
+        updatedContainer = {
+          ...containerData,
+          id: containerData.container_id,
+          created_at: new Date().toISOString(),
+        };
+
+        setContainers([...containers, updatedContainer]);
+
+        setNotification({
+          type: 'success',
+          message: `Container ${containerData.container_id} created successfully!`,
+        });
+      } else {
+        // Update existing container
+        updatedContainer = {
+          ...containerData,
+          id: selectedContainer.id,
+          updated_at: new Date().toISOString(),
+        };
+
+        setContainers(
+          containers.map((c) =>
+            c.id === selectedContainer.id ? updatedContainer : c
+          )
+        );
+
+        setNotification({
+          type: 'success',
+          message: `Container ${containerData.container_id} updated successfully!`,
+        });
+      }
+
+      // Auto-dismiss notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    } catch (error) {
+      console.error('Error saving container:', error);
+      setNotification({
+        type: 'danger',
+        message: `Error ${
+          selectedContainer ? 'updating' : 'creating'
+        } container: ${error.message}`,
+      });
+    }
+  };
+
+  // Open container edit modal
+  const handleEditContainer = (container) => {
+    setSelectedContainer(container);
+    setShowCreateModal(true);
+  };
+
+  // Handle container deletion
+  const handleDeleteContainer = async (containerId) => {
+    if (!window.confirm('Are you sure you want to delete this container?')) {
+      return;
+    }
+
+    try {
+      // In a real implementation, this would call an API endpoint
+      setContainers(containers.filter((c) => c.id !== containerId));
+
+      setNotification({
+        type: 'success',
+        message: `Container ${containerId} deleted successfully!`,
       });
 
-      // Set a default selected path
-      setSelectedPath(['19_1', '14_2']);
-    } catch (err) {
-      console.error('MST data fetch error:', err);
-      setError('Error loading network data');
+      // Auto-dismiss notification after 5 seconds
+      setTimeout(() => {
+        setNotification(null);
+      }, 5000);
+    } catch (error) {
+      console.error('Error deleting container:', error);
+      setNotification({
+        type: 'danger',
+        message: `Error deleting container: ${error.message}`,
+      });
     }
   };
 
-  // Handle container actions
-  const handleDispatchContainer = (containerId) => {
-    // In a real implementation, call your API
-    console.log(`Dispatching container ${containerId}`);
-
-    // Update local state to reflect the change
-    setContainers((prevContainers) =>
-      prevContainers.filter((container) => container.id !== containerId)
-    );
-
-    // Update stats
-    setDashboardStats((prevStats) => ({
-      ...prevStats,
-      atYard: prevStats.atYard - 1,
-      inTransit: prevStats.inTransit + 1,
-      readyForDispatch: prevStats.readyForDispatch - 1,
-    }));
+  // Handle container actions (Urgent or Dispatch)
+  const handleContainerAction = (container, action) => {
+    // Navigate to the route optimization page with container details
+    navigate('/route-optimization', {
+      state: {
+        container: container,
+        action: action,
+      },
+    });
   };
 
-  const handleMarkUrgent = (containerId, isUrgent) => {
-    // In a real implementation, call your API
-    console.log(
-      `Marking container ${containerId} as ${
-        isUrgent ? 'urgent' : 'not urgent'
-      }`
-    );
-
-    // Update local state to reflect the change
-    setContainers((prevContainers) =>
-      prevContainers.map((container) =>
-        container.id === containerId
-          ? { ...container, is_urgent: isUrgent }
-          : container
-      )
-    );
-  };
-
-  const handleAddProduct = (containerId, product) => {
-    // In a real implementation, call your API
-    console.log(`Adding product to container ${containerId}:`, product);
-
-    // Update local state to reflect the change
-    setContainers((prevContainers) =>
-      prevContainers.map((container) => {
-        if (container.id === containerId) {
-          const newFillPercentage = Math.min(
-            100,
-            container.fill_percentage + 15
-          );
-          return {
-            ...container,
-            fill_percentage: newFillPercentage,
-            total_weight: container.total_weight + product.weight,
-          };
-        }
-        return container;
-      })
-    );
-  };
-
-  const handleCreateContainer = (containerData) => {
-    // In a real implementation, call your API
-    console.log('Creating new container:', containerData);
-
-    // Generate a new container ID
-    const containerId = `C${Math.floor(1000 + Math.random() * 9000)}`;
-
-    // Create a new container object
-    const newContainer = {
-      id: containerId,
-      status: 'In Yard',
-      type: containerData.type,
-      fill_percentage: 0,
-      location: containerData.location,
-      hub_id: containerData.hub_id,
-      arrival_date: new Date().toISOString().split('T')[0],
-      contents: [],
-      total_weight: 0,
-    };
-
-    // Add to containers
-    setContainers((prevContainers) => [...prevContainers, newContainer]);
-
-    // Update stats
-    setDashboardStats((prevStats) => ({
-      ...prevStats,
-      totalContainers: prevStats.totalContainers + 1,
-      atYard: prevStats.atYard + 1,
-    }));
-  };
-
-  const renderMainContent = () => {
-    switch (activeModule) {
-      case 'network':
-        return (
-          <NetworkDashboard mstData={mstData} selectedPath={selectedPath} />
-        );
-      case 'containers':
-        return (
-          <ContainerManagementDashboard
-            containers={containers}
-            onDispatch={handleDispatchContainer}
-            onMarkUrgent={handleMarkUrgent}
-            onAddProduct={handleAddProduct}
-          />
-        );
-      case 'dispatch':
-        // Filter for containers ready for dispatch
-        const readyContainers = containers.filter((container) => {
-          const isUrgent = container.is_urgent || false;
-          const dispatchThreshold = isUrgent ? 50 : 90;
-          return container.fill_percentage >= dispatchThreshold;
-        });
-
-        return (
-          <ContainerManagementDashboard
-            containers={readyContainers}
-            onDispatch={handleDispatchContainer}
-            onMarkUrgent={handleMarkUrgent}
-            onAddProduct={handleAddProduct}
-          />
-        );
-      default:
-        return <div>Select a module to view</div>;
+  // Calculate progress bar color based on fill percentage
+  const getProgressColor = (fillPercentage, priority) => {
+    if (priority === 'urgent' && fillPercentage >= 50) {
+      return '#ff4d4f'; // Red for urgent containers past threshold
+    } else if (fillPercentage >= 90) {
+      return '#ff4d4f'; // Red for regular containers past threshold
+    } else if (fillPercentage >= 75) {
+      return '#faad14'; // Yellow/amber for approaching threshold
+    } else {
+      return '#52c41a'; // Green for normal levels
     }
   };
 
-  return (
-    <div className="modular-dashboard-container">
-      <Header />
-      <main className="dashboard-main">
-        <CommandBar
-          onSearchChange={(query) => console.log('Search:', query)}
-          activeModule={activeModule}
-          setActiveModule={setActiveModule}
-        />
+  // Render container cards
+  const renderContainerCards = () => {
+    if (containers.length === 0) {
+      return (
+        <div className="no-containers">
+          <i className="fas fa-box-open"></i>
+          <p>
+            No containers found. Click "Create New Container" to add your first
+            container.
+          </p>
+        </div>
+      );
+    }
 
-        {loading ? (
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading dashboard data...</p>
-          </div>
-        ) : error ? (
-          <div className="error-message">{error}</div>
-        ) : (
-          <>
-            {dashboardStats && <StatsOverview stats={dashboardStats} />}
-
-            <div className="dashboard-actions">
-              <button
-                className="create-container-btn"
-                onClick={() => setShowCreateModal(true)}
+    return (
+      <div className="container-grid">
+        {containers.map((container) => (
+          <div
+            key={container.id || container.container_id}
+            className={`container-card priority-${
+              container.priority || 'normal'
+            }`}
+          >
+            <div className="container-header">
+              <h3>{container.id || container.container_id}</h3>
+              <span
+                className={`status-badge status-${
+                  container.status?.toLowerCase().replace(/\s/g, '-') ||
+                  'in-yard'
+                }`}
               >
-                <i className="fas fa-plus"></i> New Container
-              </button>
+                {container.status || 'In Yard'}
+              </span>
             </div>
 
-            <div className="dashboard-content">{renderMainContent()}</div>
+            <div className="container-details">
+              <div className="detail-row">
+                <span className="detail-label">Type:</span>
+                <span className="detail-value">{container.type || 'N/A'}</span>
+              </div>
 
-            {showCreateModal && (
-              <CreateContainerForm
-                onCreateContainer={handleCreateContainer}
-                onClose={() => setShowCreateModal(false)}
-              />
-            )}
-          </>
-        )}
-      </main>
+              <div className="detail-row">
+                <span className="detail-label">Contents:</span>
+                <span className="detail-value">
+                  {container.contents || 'N/A'}
+                </span>
+              </div>
+
+              <div className="detail-row">
+                <span className="detail-label">Hub:</span>
+                <span className="detail-value">
+                  {hubs.find((h) => h.id === container.hub)?.name ||
+                    container.hub ||
+                    'N/A'}
+                </span>
+              </div>
+
+              <div className="detail-row">
+                <span className="detail-label">Major Hub:</span>
+                <span className="detail-value">
+                  {majorHubs.find((h) => h.id === container.major_hub)?.name ||
+                    container.major_hub ||
+                    'N/A'}
+                </span>
+              </div>
+
+              <div className="detail-row">
+                <span className="detail-label">Priority:</span>
+                <span
+                  className={`detail-value priority-text priority-${
+                    container.priority || 'normal'
+                  }`}
+                >
+                  {container.priority
+                    ? container.priority.charAt(0).toUpperCase() +
+                      container.priority.slice(1)
+                    : 'Normal'}
+                </span>
+              </div>
+
+              {/* Fill percentage bar */}
+              <div className="fill-percentage-container">
+                <span className="detail-label">Fill %:</span>
+                <div className="progress-bar-container">
+                  <div
+                    className="progress-bar"
+                    style={{
+                      width: `${container.fill_percentage || 0}%`,
+                      backgroundColor: getProgressColor(
+                        container.fill_percentage || 0,
+                        container.priority || 'normal'
+                      ),
+                    }}
+                  ></div>
+                </div>
+                <span className="percentage-value">
+                  {container.fill_percentage || 0}%
+                </span>
+              </div>
+
+              {/* Show pickup/drop info if available */}
+              {container.pickup_lat && container.pickup_lng && (
+                <div className="detail-row">
+                  <span className="detail-label">Pickup:</span>
+                  <span className="detail-value coord-value">
+                    {container.pickup_address ||
+                      `${container.pickup_lat}, ${container.pickup_lng}`}
+                  </span>
+                </div>
+              )}
+
+              {container.drop_lat && container.drop_lng && (
+                <div className="detail-row">
+                  <span className="detail-label">Destination:</span>
+                  <span className="detail-value coord-value">
+                    {container.drop_address ||
+                      `${container.drop_lat}, ${container.drop_lng}`}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="container-actions">
+              <button
+                className="action-button edit-button btn-small btn-outline"
+                onClick={() => handleEditContainer(container)}
+              >
+                <i className="fas fa-edit"></i> Edit
+              </button>
+              <button
+                className="action-button urgent-button btn-small btn-warning"
+                onClick={() => handleContainerAction(container, 'urgent')}
+                disabled={container.status === 'Delivered'}
+              >
+                <i className="fas fa-exclamation-triangle"></i> Urgent
+              </button>
+              <button
+                className="action-button dispatch-button btn-small btn-primary"
+                onClick={() => handleContainerAction(container, 'dispatch')}
+                disabled={
+                  container.status === 'In Transit' ||
+                  container.status === 'Delivered'
+                }
+              >
+                <i className="fas fa-truck"></i> Dispatch
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render MST visualization tab
+  const renderMSTVisualizer = () => {
+    return (
+      <div className="mst-visualizer-container">
+        <div className="dashboard-summary">
+          <div className="stats-container">
+            <div className="stat-card">
+              <h3>Network Nodes</h3>
+              <div className="stat-value">
+                {mstData ? mstData.nodeCount || 'N/A' : 'Loading...'}
+              </div>
+            </div>
+            <div className="stat-card">
+              <h3>Optimized Connections</h3>
+              <div className="stat-value">
+                {mstData ? mstData.edgeCount || 'N/A' : 'Loading...'}
+              </div>
+            </div>
+            <div className="stat-card">
+              <h3>Total Distance</h3>
+              <div className="stat-value">
+                {mstData
+                  ? `${mstData.totalDistance?.toFixed(2)} km` || 'N/A'
+                  : 'Loading...'}
+              </div>
+            </div>
+            <div className="stat-card">
+              <h3>Efficiency Score</h3>
+              <div className="stat-value">
+                {mstData ? '94.8%' : 'Loading...'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="recent-containers">
+          <h2>Network Optimization Visualization</h2>
+          <div className="mst-canvas-container">
+            <canvas id="mst-canvas" className="mst-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render statistics tab
+  const renderStatistics = () => {
+    return (
+      <div className="statistics-container">
+        <div className="dashboard-summary">
+          <div className="stats-container">
+            <div className="stat-card">
+              <h3>Active Containers</h3>
+              <div className="stat-value">{containers.length}</div>
+              <div className="stat-trend trend-up">↑ 12% from last month</div>
+            </div>
+            <div className="stat-card">
+              <h3>In Transit</h3>
+              <div className="stat-value">
+                {containers.filter((c) => c.status === 'In Transit').length}
+              </div>
+              <div className="stat-trend trend-up">↑ 8% from last week</div>
+            </div>
+            <div className="stat-card">
+              <h3>Average Fill</h3>
+              <div className="stat-value">
+                {containers.length
+                  ? `${Math.round(
+                      containers.reduce(
+                        (acc, c) => acc + (c.fill_percentage || 0),
+                        0
+                      ) / containers.length
+                    )}%`
+                  : '0%'}
+              </div>
+              <div className="stat-trend trend-up">↑ 5% improvement</div>
+            </div>
+            <div className="stat-card">
+              <h3>Urgent Status</h3>
+              <div className="stat-value">
+                {containers.filter((c) => c.priority === 'urgent').length}
+              </div>
+              <div className="stat-trend trend-down">↓ 15% reduction</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="recent-containers">
+          <h2>Container Status Overview</h2>
+          <table className="container-table">
+            <thead>
+              <tr>
+                <th>Container ID</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Fill %</th>
+                <th>Location</th>
+              </tr>
+            </thead>
+            <tbody>
+              {containers.slice(0, 5).map((container) => (
+                <tr key={container.id || container.container_id}>
+                  <td>{container.id || container.container_id}</td>
+                  <td>{container.type || 'N/A'}</td>
+                  <td>
+                    <span
+                      className={`status-badge status-${
+                        container.status?.toLowerCase().replace(/\s/g, '-') ||
+                        'in-yard'
+                      }`}
+                    >
+                      {container.status || 'In Yard'}
+                    </span>
+                  </td>
+                  <td>
+                    <span
+                      className={`priority-${container.priority || 'normal'}`}
+                    >
+                      {container.priority
+                        ? container.priority.charAt(0).toUpperCase() +
+                          container.priority.slice(1)
+                        : 'Normal'}
+                    </span>
+                  </td>
+                  <td>{container.fill_percentage || 0}%</td>
+                  <td>{container.hub || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  // Main render
+  return (
+    <div className="unified-dashboard">
+      <div className="page-title">Unified Container Management Dashboard</div>
+      <p className="welcome-message">
+        Monitor and manage all container operations from a single interface.
+        Coordinate logistics, track inventory, and optimize routes.
+      </p>
+
+      {/* Notification area */}
+      {notification && (
+        <Alert
+          variant={notification.type}
+          className="notification"
+          onClose={() => setNotification(null)}
+          dismissible
+        >
+          {notification.message}
+        </Alert>
+      )}
+
+      <div className="dashboard-tabs">
+        <button
+          className={`tab-button ${
+            activeTab === 'containers' ? 'active' : ''
+          } btn ${activeTab === 'containers' ? 'btn-primary' : 'btn-outline'}`}
+          onClick={() => setActiveTab('containers')}
+        >
+          <i className="fas fa-box-open"></i> Container Management
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'mst' ? 'active' : ''} btn ${
+            activeTab === 'mst' ? 'btn-primary' : 'btn-outline'
+          }`}
+          onClick={() => setActiveTab('mst')}
+        >
+          <i className="fas fa-project-diagram"></i> Network Visualization
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'stats' ? 'active' : ''} btn ${
+            activeTab === 'stats' ? 'btn-primary' : 'btn-outline'
+          }`}
+          onClick={() => setActiveTab('stats')}
+        >
+          <i className="fas fa-chart-line"></i> Logistics Statistics
+        </button>
+      </div>
+
+      {/* Create Container Button */}
+      <div className="dashboard-actions">
+        <button className="btn btn-primary btn-icon" onClick={openCreateModal}>
+          <i className="fas fa-plus"></i> Create New Container
+        </button>
+      </div>
+
+      {/* Dashboard Content */}
+      <div className="dashboard-content">
+        {activeTab === 'containers' && renderContainerCards()}
+        {activeTab === 'mst' && renderMSTVisualizer()}
+        {activeTab === 'stats' && renderStatistics()}
+      </div>
+
+      {/* Container Creation/Edit Modal */}
+      <CreateContainerModal
+        show={showCreateModal}
+        handleClose={() => setShowCreateModal(false)}
+        handleSave={handleSaveContainer}
+        container={selectedContainer}
+      />
     </div>
   );
 };
