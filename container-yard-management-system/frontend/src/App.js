@@ -14,6 +14,7 @@ import RouteVisualizer from './components/RouteVisualizer';
 import RouteOptimizationPage from './components/RouteOptimizationPage';
 import Inventories from './components/Inventories';
 import Containers from './components/Containers';
+import DashboardContainers from './components/DashboardContainers';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 
@@ -123,6 +124,20 @@ function App() {
                   <Header />
                   <div className="main-content-container">
                     <Containers />
+                  </div>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard-containers"
+            element={
+              <ProtectedRoute>
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <DashboardContainers />
                   </div>
                 </div>
               </ProtectedRoute>

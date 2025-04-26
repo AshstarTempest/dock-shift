@@ -50,67 +50,75 @@ const UnifiedDashboard = () => {
       if (response.data.success) {
         setContainers(response.data.containers);
       } else {
-        // For demo/development, use mock data
-        setContainers([
-          {
-            id: 'MAEU1234567',
-            container_id: 'MAEU1234567',
-            type: '20GP',
-            status: 'In Yard',
-            major_hub: 'mumbai_hub',
-            hub: 'mumbai_north',
-            contents: 'Electronics',
-            notes: 'Handle with care',
-            fill_percentage: 75,
-            priority: 'normal',
-            pickup_lat: '19.0760',
-            pickup_lng: '72.8777',
-            drop_lat: '18.5204',
-            drop_lng: '73.8567',
-            pickup_address: 'Mumbai Port',
-            drop_address: 'Pune Logistics Hub',
-          },
-          {
-            id: 'CMAU7654321',
-            container_id: 'CMAU7654321',
-            type: '40HC',
-            status: 'In Transit',
-            major_hub: 'delhi_hub',
-            hub: 'delhi_tughlakabad',
-            contents: 'Textiles',
-            notes: '',
-            fill_percentage: 90,
-            priority: 'high',
-            pickup_lat: '28.7041',
-            pickup_lng: '77.1025',
-            drop_lat: '20.2961',
-            drop_lng: '85.8245',
-            pickup_address: 'Delhi Hub',
-            drop_address: 'Bhubaneswar, Odisha',
-          },
-          {
-            id: 'HLXU5432198',
-            container_id: 'HLXU5432198',
-            type: '40RF',
-            status: 'Delivered',
-            major_hub: 'chennai_hub',
-            hub: 'chennai_port',
-            contents: 'Perishable Goods',
-            notes: 'Temperature controlled',
-            fill_percentage: 65,
-            priority: 'urgent',
-            pickup_lat: '13.0827',
-            pickup_lng: '80.2707',
-            drop_lat: '12.9716',
-            drop_lng: '77.5946',
-            pickup_address: 'Chennai Port',
-            drop_address: 'Bangalore City',
-          },
-        ]);
+        console.warn('API returned unsuccessful response for containers');
+        // Fall back to mock data
+        useMockData();
       }
     } catch (error) {
       console.error('Error fetching containers:', error);
+      // Fall back to mock data during development
+      useMockData();
     }
+  };
+
+  // Use mock data when API fails
+  const useMockData = () => {
+    setContainers([
+      {
+        id: 'MAEU1234567',
+        container_id: 'MAEU1234567',
+        type: '20GP',
+        status: 'In Yard',
+        major_hub: 'mumbai_hub',
+        hub: 'mumbai_north',
+        contents: 'Electronics',
+        notes: 'Handle with care',
+        fill_percentage: 75,
+        priority: 'normal',
+        pickup_lat: '19.0760',
+        pickup_lng: '72.8777',
+        drop_lat: '18.5204',
+        drop_lng: '73.8567',
+        pickup_address: 'Mumbai Port',
+        drop_address: 'Pune Logistics Hub',
+      },
+      {
+        id: 'CMAU7654321',
+        container_id: 'CMAU7654321',
+        type: '40HC',
+        status: 'In Transit',
+        major_hub: 'delhi_hub',
+        hub: 'delhi_tughlakabad',
+        contents: 'Textiles',
+        notes: '',
+        fill_percentage: 90,
+        priority: 'high',
+        pickup_lat: '28.7041',
+        pickup_lng: '77.1025',
+        drop_lat: '20.2961',
+        drop_lng: '85.8245',
+        pickup_address: 'Delhi Hub',
+        drop_address: 'Bhubaneswar, Odisha',
+      },
+      {
+        id: 'HLXU5432198',
+        container_id: 'HLXU5432198',
+        type: '40RF',
+        status: 'Delivered',
+        major_hub: 'chennai_hub',
+        hub: 'chennai_port',
+        contents: 'Perishable Goods',
+        notes: 'Temperature controlled',
+        fill_percentage: 65,
+        priority: 'urgent',
+        pickup_lat: '13.0827',
+        pickup_lng: '80.2707',
+        drop_lat: '12.9716',
+        drop_lng: '77.5946',
+        pickup_address: 'Chennai Port',
+        drop_address: 'Bangalore City',
+      },
+    ]);
   };
 
   // Fetch hubs data
@@ -395,7 +403,7 @@ const UnifiedDashboard = () => {
               <div className="detail-row">
                 <span className="detail-label">Priority:</span>
                 <span
-                  className={`detail-value priority-text priority-${
+                  className={`detail-value priority-${
                     container.priority || 'normal'
                   }`}
                 >

@@ -95,12 +95,13 @@ function Dashboard() {
       setLoading(true);
       setError(null);
 
-      // Try to fetch from API
-      const response = await fetch(`${API_BASE_URL}/api/dashboard`, {
+      // Make sure we're sending proper credentials
+      const response = await fetch(`${API_BASE_URL}/api/dashboard2`, {
         method: 'GET',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
       });
 
@@ -111,13 +112,16 @@ function Dashboard() {
       }
 
       const data = await response.json();
+      console.log('Dashboard data from API:', data); // Debug logging
       setDashboardData(data);
     } catch (err) {
       console.error('API fetch failed, using mock data instead:', err);
       // Use mock data instead of showing error
       setDashboardData(mockDashboardData);
       // Set a user-friendly error message
-      setError('Using offline data. Connection to server failed.');
+      setError(
+        'Using offline data. Connection to server failed: ' + err.message
+      );
     } finally {
       setLoading(false);
     }

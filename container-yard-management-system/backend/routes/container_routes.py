@@ -58,14 +58,16 @@ def create_container():
         if existing:
             return jsonify({'success': False, 'error': 'Container ID already exists'}), 400
         
-        # Create new container
+        # Create new container with all fields that might come from frontend
         container = Container(
             container_id=data['container_id'],
-            status=data.get('status', 'In Yard'),
+            status=data.get('status', 'In Transit'),
             container_type=data.get('container_type'),
             size=data.get('size'),
             total_weight=data.get('total_weight'),
-            fill_percentage=data.get('fill_percentage', 0),
+            fill_percentage=data.get('fill_percentage', 50),
+            total_items=data.get('total_items', 0),
+            urgency_status=data.get('urgency_status', 'Medium'),
             pickup_city=data.get('pickup_city'),
             pickup_lat=data.get('pickup_lat'),
             pickup_lng=data.get('pickup_lng'),
@@ -78,19 +80,17 @@ def create_container():
             user_id=current_user.id
         )
         
-        # Handle hub assignment if provided
-        if 'hub_id' in data and data['hub_id']:
-            hub = Hub.query.get(data['hub_id'])
-            if not hub:
-                return jsonify({'success': False, 'error': 'Hub not found'}), 404
-            container.hub_id = data['hub_id']
-        
         db.session.add(container)
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Container created', 'container': container.to_dict()}), 201
+        return jsonify({
+            'success': True, 
+            'message': 'Container created successfully', 
+            'container': container.to_dict()
+        }), 201
     except Exception as e:
         db.session.rollback()
+        print(f"Error creating container: {str(e)}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 @container_bp.route('/api/containers/<string:container_id>', methods=['PUT'])

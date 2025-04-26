@@ -58,6 +58,8 @@ const Containers = () => {
     total_items: 1,
     total_weight: '',
     urgency_status: 'Medium',
+    fill_percentage: 50,
+    priority: 'normal',
   });
 
   // Alert state
@@ -79,61 +81,78 @@ const Containers = () => {
   const fetchContainers = async () => {
     try {
       setLoading(true);
-      // In a real application, this would be an API call like:
-      // const response = await fetch(`${API_URL}/api/containers`);
-      // For now, we'll use mock data
-      setTimeout(() => {
-        const mockContainers = [
-          {
-            id: 'C1001',
-            container_id: 'C1001',
-            status: 'In Transit',
-            pickup_city: 'Mumbai',
-            destination_city: 'Delhi',
-            total_items: 45,
-            total_weight: 2500,
-            urgency_status: 'High',
-            created_at: '2025-04-20T10:30:00',
-            updated_at: '2025-04-21T08:15:00',
-            fill_percentage: 85,
-          },
-          {
-            id: 'C1002',
-            container_id: 'C1002',
-            status: 'At Yard',
-            pickup_city: 'Chennai',
-            destination_city: 'Bangalore',
-            total_items: 30,
-            total_weight: 1800,
-            urgency_status: 'Medium',
-            created_at: '2025-04-19T14:20:00',
-            updated_at: '2025-04-19T18:45:00',
-            fill_percentage: 60,
-          },
-          {
-            id: 'C1003',
-            container_id: 'C1003',
-            status: 'Delivered',
-            pickup_city: 'Kolkata',
-            destination_city: 'Hyderabad',
-            total_items: 60,
-            total_weight: 3200,
-            urgency_status: 'Low',
-            created_at: '2025-04-18T09:10:00',
-            updated_at: '2025-04-22T11:30:00',
-            fill_percentage: 95,
-          },
-        ];
-        setContainers(mockContainers);
-        setLoading(false);
-      }, 800);
+      const response = await fetch(`${API_URL}/api/containers`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setContainers(data.containers);
+      } else {
+        throw new Error(data.error || 'Failed to fetch containers');
+      }
     } catch (err) {
+      console.error('Error fetching containers:', err);
       setError(`Failed to load containers: ${err.message}`);
       setAlert({
         show: true,
         variant: 'danger',
         message: `Failed to load containers: ${err.message}`,
       });
+
+      // Use mock data as fallback only when there's an error
+      const mockContainers = [
+        {
+          id: 'C1001',
+          container_id: 'C1001',
+          status: 'In Transit',
+          pickup_city: 'Mumbai',
+          destination_city: 'Delhi',
+          total_items: 45,
+          total_weight: 2500,
+          urgency_status: 'High',
+          created_at: '2025-04-20T10:30:00',
+          updated_at: '2025-04-21T08:15:00',
+          fill_percentage: 85,
+        },
+        {
+          id: 'C1002',
+          container_id: 'C1002',
+          status: 'At Yard',
+          pickup_city: 'Chennai',
+          destination_city: 'Bangalore',
+          total_items: 30,
+          total_weight: 1800,
+          urgency_status: 'Medium',
+          created_at: '2025-04-19T14:20:00',
+          updated_at: '2025-04-19T18:45:00',
+          fill_percentage: 60,
+        },
+        {
+          id: 'C1003',
+          container_id: 'C1003',
+          status: 'Delivered',
+          pickup_city: 'Kolkata',
+          destination_city: 'Hyderabad',
+          total_items: 60,
+          total_weight: 3200,
+          urgency_status: 'Low',
+          created_at: '2025-04-18T09:10:00',
+          updated_at: '2025-04-22T11:30:00',
+          fill_percentage: 95,
+        },
+      ];
+      setContainers(mockContainers);
+    } finally {
       setLoading(false);
     }
   };
@@ -148,34 +167,54 @@ const Containers = () => {
         );
       }
 
-      // In a real application, this would be an API call
-      // const response = await fetch(`${API_URL}/api/containers`, {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   credentials: 'include',
-      //   body: JSON.stringify(currentContainer),
-      // });
+      // Ensure required fields are filled
+      if (
+        !currentContainer.pickup_city ||
+        !currentContainer.destination_city ||
+        !currentContainer.total_weight
+      ) {
+        throw new Error('Please fill all required fields');
+      }
 
-      // Mock successful response
-      const newContainer = {
-        id: currentContainer.container_id,
-        ...currentContainer,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        fill_percentage: Math.floor(Math.random() * 40) + 60, // Random fill percentage between 60-100
-      };
-
-      setContainers([...containers, newContainer]);
-      setAlert({
-        show: true,
-        variant: 'success',
-        message: 'Container added successfully!',
+      const response = await fetch(`${API_URL}/api/containers`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...currentContainer,
+          // Convert string values to appropriate types
+          total_items: parseInt(currentContainer.total_items, 10),
+          total_weight: parseFloat(currentContainer.total_weight),
+          fill_percentage: parseInt(currentContainer.fill_percentage, 10),
+        }),
       });
-      setShowAddModal(false);
-      resetForm();
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create container');
+      }
+
+      if (result.success) {
+        // Important: Make sure we add the new container to our state
+        const newContainer = result.container;
+        setContainers([...containers, newContainer]);
+
+        setAlert({
+          show: true,
+          variant: 'success',
+          message: 'Container added successfully!',
+        });
+        setShowAddModal(false);
+        resetForm();
+      } else {
+        throw new Error(result.error || 'Failed to create container');
+      }
     } catch (err) {
+      console.error('Error adding container:', err);
       setAlert({
         show: true,
         variant: 'danger',
@@ -187,31 +226,50 @@ const Containers = () => {
   // Update existing container
   const handleUpdateContainer = async () => {
     try {
-      // In a real application, this would be an API call
-      // const response = await fetch(`${API_URL}/api/containers/${currentContainer.id}`, {
-      //   method: 'PUT',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   credentials: 'include',
-      //   body: JSON.stringify(currentContainer),
-      // });
-
-      // Mock successful update
-      const updatedContainers = containers.map((container) =>
-        container.id === currentContainer.id
-          ? { ...currentContainer, updated_at: new Date().toISOString() }
-          : container
+      const response = await fetch(
+        `${API_URL}/api/containers/${currentContainer.container_id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            ...currentContainer,
+            // Convert string values to appropriate types
+            total_items: parseInt(currentContainer.total_items, 10),
+            total_weight: parseFloat(currentContainer.total_weight),
+            fill_percentage: parseInt(currentContainer.fill_percentage, 10),
+          }),
+        }
       );
 
-      setContainers(updatedContainers);
-      setAlert({
-        show: true,
-        variant: 'success',
-        message: 'Container updated successfully!',
-      });
-      setShowEditModal(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update container');
+      }
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Update the container in the local state
+        const updatedContainers = containers.map((container) =>
+          container.id === currentContainer.id ? result.container : container
+        );
+
+        setContainers(updatedContainers);
+        setAlert({
+          show: true,
+          variant: 'success',
+          message: 'Container updated successfully!',
+        });
+        setShowEditModal(false);
+      } else {
+        throw new Error(result.error || 'Failed to update container');
+      }
     } catch (err) {
+      console.error('Error updating container:', err);
       setAlert({
         show: true,
         variant: 'danger',
@@ -224,23 +282,36 @@ const Containers = () => {
   const handleDeleteContainer = async (id) => {
     if (window.confirm('Are you sure you want to delete this container?')) {
       try {
-        // In a real application, this would be an API call
-        // const response = await fetch(`${API_URL}/api/containers/${id}`, {
-        //   method: 'DELETE',
-        //   credentials: 'include',
-        // });
-
-        // Mock successful deletion
-        const filteredContainers = containers.filter(
-          (container) => container.id !== id
-        );
-        setContainers(filteredContainers);
-        setAlert({
-          show: true,
-          variant: 'success',
-          message: 'Container deleted successfully!',
+        const response = await fetch(`${API_URL}/api/containers/${id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            Accept: 'application/json',
+          },
         });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to delete container');
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          const filteredContainers = containers.filter(
+            (container) => container.id !== id
+          );
+          setContainers(filteredContainers);
+          setAlert({
+            show: true,
+            variant: 'success',
+            message: 'Container deleted successfully!',
+          });
+        } else {
+          throw new Error(result.error || 'Failed to delete container');
+        }
       } catch (err) {
+        console.error('Error deleting container:', err);
         setAlert({
           show: true,
           variant: 'danger',
@@ -266,6 +337,8 @@ const Containers = () => {
       total_items: 1,
       total_weight: '',
       urgency_status: 'Medium',
+      fill_percentage: 50,
+      priority: 'normal',
     });
   };
 
