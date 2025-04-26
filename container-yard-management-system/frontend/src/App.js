@@ -9,6 +9,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Dashboard from './components/Dashboard';
 import ModularDashboard from './components/ModularDashboard';
+import UnifiedDashboard from './components/UnifiedDashboard';
 import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
 import RouteVisualizer from './components/RouteVisualizer';
@@ -43,6 +44,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ModularDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/unified-dashboard"
+            element={
+              <ProtectedRoute>
+                <UnifiedDashboard />
               </ProtectedRoute>
             }
           />

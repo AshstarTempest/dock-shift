@@ -176,7 +176,7 @@ const Home = () => {
                   Get Started
                 </Link>
                 <Link
-                  to="/login"
+                  to="/unified-dashboard"
                   className="btn btn-outline"
                   style={{
                     background: 'transparent',
@@ -185,7 +185,7 @@ const Home = () => {
                     padding: '0.75rem 2rem',
                   }}
                 >
-                  Learn More
+                  New Unified Dashboard
                 </Link>
               </div>
             </div>
@@ -1047,10 +1047,7 @@ const Home = () => {
               marginBottom: '3rem',
             }}
           >
-           
-
             {/* Road */}
-           
           </div>
 
           {/* Footer Content */}
@@ -1151,7 +1148,7 @@ const Home = () => {
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="2" 
+                        strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >

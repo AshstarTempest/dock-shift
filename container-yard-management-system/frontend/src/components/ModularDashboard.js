@@ -18,8 +18,24 @@ const ContainerCard = ({ container }) => {
     return '';
   };
 
+  // Fill percentage with default value
+  const fillPercentage = container.fill_percentage || 0;
+
+  // Determine if container is ready for dispatch based on urgency and fill level
+  const isUrgent = container.is_urgent || false;
+  const dispatchThreshold = isUrgent ? 50 : 90;
+  const isReadyForDispatch = fillPercentage >= dispatchThreshold;
+
+  // Get color for fill bar
+  const getFillColor = () => {
+    if (fillPercentage >= 90) return '#e53935'; // Red for very full
+    if (fillPercentage >= 75) return '#ff9800'; // Orange for mostly full
+    if (fillPercentage >= 50) return '#4caf50'; // Green for half full
+    return '#2196f3'; // Blue for low fill
+  };
+
   return (
-    <div className="container-card">
+    <div className={`container-card ${isUrgent ? 'urgent' : ''}`}>
       <div className="container-card-header">
         <span className="container-id">{container.id}</span>
         <span
@@ -27,7 +43,36 @@ const ContainerCard = ({ container }) => {
         >
           {container.status}
         </span>
+        {isUrgent && (
+          <span className="urgency-badge">
+            <i className="fas fa-exclamation-circle"></i> URGENT
+          </span>
+        )}
       </div>
+
+      {/* Fill percentage indicator */}
+      <div className="fill-percentage-container">
+        <div className="fill-percentage-bar-container">
+          <div
+            className="fill-percentage-bar"
+            style={{
+              width: `${fillPercentage}%`,
+              backgroundColor: getFillColor(),
+            }}
+          ></div>
+          {/* Threshold indicator */}
+          <div
+            className="dispatch-threshold"
+            style={{ left: `${dispatchThreshold}%` }}
+            title={`Dispatch at ${dispatchThreshold}%`}
+          ></div>
+        </div>
+        <div className="fill-percentage-text">
+          {fillPercentage}% filled
+          {isReadyForDispatch && <span className="dispatch-ready"> READY</span>}
+        </div>
+      </div>
+
       <div className="container-content">
         <div className="container-detail">
           <span className="detail-label">Type:</span>
@@ -42,19 +87,27 @@ const ContainerCard = ({ container }) => {
         <div className="container-detail">
           <span className="detail-label">Arrival:</span>
           <span className="detail-value">
-            {container.arrival || '4/20/2025'}
+            {container.arrival_date || container.arrival || '4/20/2025'}
           </span>
         </div>
         <div className="container-detail">
           <span className="detail-label">Departure:</span>
           <span className="detail-value">
-            {container.departure || '5/15/2025'}
+            {container.departure_date || container.departure || '5/15/2025'}
           </span>
         </div>
         <div className="container-detail">
           <span className="detail-label">Contents:</span>
           <span className="detail-value">
-            {container.contents || 'Electronics'}
+            {container.contents_description ||
+              container.contents ||
+              'Electronics'}
+          </span>
+        </div>
+        <div className="container-detail">
+          <span className="detail-label">Weight:</span>
+          <span className="detail-value">
+            {container.total_weight ? `${container.total_weight} kg` : 'N/A'}
           </span>
         </div>
       </div>
@@ -63,10 +116,24 @@ const ContainerCard = ({ container }) => {
           <i className="fas fa-eye"></i>
           View Details
         </button>
-        <button className="container-action-btn update">
-          <i className="fas fa-edit"></i>
-          Update Status
-        </button>
+        {isReadyForDispatch && (
+          <button className="container-action-btn dispatch">
+            <i className="fas fa-shipping-fast"></i>
+            Dispatch
+          </button>
+        )}
+        {!isReadyForDispatch && (
+          <button className="container-action-btn update">
+            <i className="fas fa-edit"></i>
+            Update Status
+          </button>
+        )}
+        {!isUrgent && (
+          <button className="container-action-btn set-urgent">
+            <i className="fas fa-exclamation-triangle"></i>
+            Mark Urgent
+          </button>
+        )}
       </div>
     </div>
   );
