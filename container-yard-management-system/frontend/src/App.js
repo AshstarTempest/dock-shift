@@ -7,8 +7,6 @@ import './styles/ModularDashboard.css';
 import Home from './components/Home';
 import Login from './components/Login';
 import Register from './components/Register';
-import Dashboard from './components/Dashboard';
-import ModularDashboard from './components/ModularDashboard';
 import UnifiedDashboard from './components/UnifiedDashboard';
 import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
@@ -32,28 +30,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected routes */}
+          {/* Protected routes - Unified Dashboard as main dashboard */}
           <Route
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/modern-dashboard"
-            element={
-              <ProtectedRoute>
-                <ModularDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/unified-dashboard"
-            element={
-              <ProtectedRoute>
-                <div className="app-container">
+                <div className="app-container dockshift-theme">
                   <Header />
                   <div className="main-content-container">
                     <UnifiedDashboard />
@@ -62,35 +44,54 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/profile"
             element={
               <ProtectedRoute>
-                <Profile />
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <Profile />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/major-hubs"
             element={
               <ProtectedRoute>
-                <MajorHubs />
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <MajorHubs />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/route-visualizer"
             element={
               <ProtectedRoute>
-                <RouteVisualizer />
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <RouteVisualizer />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/route-optimization"
             element={
               <ProtectedRoute>
-                <div className="app-container">
+                <div className="app-container dockshift-theme">
                   <Header />
                   <div className="main-content-container">
                     <RouteOptimizationPage />
@@ -99,19 +100,31 @@ function App() {
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/inventory"
             element={
               <ProtectedRoute>
-                <Inventories />
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <Inventories />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />
+
           <Route
             path="/containers"
             element={
               <ProtectedRoute>
-                <Containers />
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <Containers />
+                  </div>
+                </div>
               </ProtectedRoute>
             }
           />

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/App.css';
-import '../styles/ModularDashboard.css';
 import { Alert } from 'react-bootstrap';
 
 // Import our custom components
@@ -316,13 +315,13 @@ const UnifiedDashboard = () => {
   // Calculate progress bar color based on fill percentage
   const getProgressColor = (fillPercentage, priority) => {
     if (priority === 'urgent' && fillPercentage >= 50) {
-      return '#ff4d4f'; // Red for urgent containers past threshold
+      return 'var(--status-delayed)'; // Red for urgent containers past threshold
     } else if (fillPercentage >= 90) {
-      return '#ff4d4f'; // Red for regular containers past threshold
+      return 'var(--status-delayed)'; // Red for regular containers past threshold
     } else if (fillPercentage >= 75) {
-      return '#faad14'; // Yellow/amber for approaching threshold
+      return 'var(--status-in-transit)'; // Yellow/amber for approaching threshold
     } else {
-      return '#52c41a'; // Green for normal levels
+      return 'var(--status-delivered)'; // Green for normal levels
     }
   };
 
@@ -330,8 +329,8 @@ const UnifiedDashboard = () => {
   const renderContainerCards = () => {
     if (containers.length === 0) {
       return (
-        <div className="no-containers">
-          <i className="fas fa-box-open"></i>
+        <div className="empty-state">
+          <i className="fas fa-box-open fa-3x"></i>
           <p>
             No containers found. Click "Create New Container" to add your first
             container.
@@ -345,12 +344,13 @@ const UnifiedDashboard = () => {
         {containers.map((container) => (
           <div
             key={container.id || container.container_id}
-            className={`container-card priority-${
-              container.priority || 'normal'
-            }`}
+            className="card animate-in"
           >
-            <div className="container-header">
-              <h3>{container.id || container.container_id}</h3>
+            <div className="card-header">
+              <h2>
+                <i className="fas fa-shipping-fast"></i>{' '}
+                {container.id || container.container_id}
+              </h2>
               <span
                 className={`status-badge status-${
                   container.status?.toLowerCase().replace(/\s/g, '-') ||
@@ -361,7 +361,7 @@ const UnifiedDashboard = () => {
               </span>
             </div>
 
-            <div className="container-details">
+            <div className="card-body">
               <div className="detail-row">
                 <span className="detail-label">Type:</span>
                 <span className="detail-value">{container.type || 'N/A'}</span>
@@ -446,32 +446,32 @@ const UnifiedDashboard = () => {
                   </span>
                 </div>
               )}
-            </div>
 
-            <div className="container-actions">
-              <button
-                className="action-button edit-button btn-small btn-outline"
-                onClick={() => handleEditContainer(container)}
-              >
-                <i className="fas fa-edit"></i> Edit
-              </button>
-              <button
-                className="action-button urgent-button btn-small btn-warning"
-                onClick={() => handleContainerAction(container, 'urgent')}
-                disabled={container.status === 'Delivered'}
-              >
-                <i className="fas fa-exclamation-triangle"></i> Urgent
-              </button>
-              <button
-                className="action-button dispatch-button btn-small btn-primary"
-                onClick={() => handleContainerAction(container, 'dispatch')}
-                disabled={
-                  container.status === 'In Transit' ||
-                  container.status === 'Delivered'
-                }
-              >
-                <i className="fas fa-truck"></i> Dispatch
-              </button>
+              <div className="container-actions">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => handleEditContainer(container)}
+                >
+                  <i className="fas fa-edit"></i> Edit
+                </button>
+                <button
+                  className="btn btn-warning btn-sm"
+                  onClick={() => handleContainerAction(container, 'urgent')}
+                  disabled={container.status === 'Delivered'}
+                >
+                  <i className="fas fa-exclamation-triangle"></i> Urgent
+                </button>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={() => handleContainerAction(container, 'dispatch')}
+                  disabled={
+                    container.status === 'In Transit' ||
+                    container.status === 'Delivered'
+                  }
+                >
+                  <i className="fas fa-truck"></i> Dispatch
+                </button>
+              </div>
             </div>
           </div>
         ))}
@@ -486,36 +486,67 @@ const UnifiedDashboard = () => {
         <div className="dashboard-summary">
           <div className="stats-container">
             <div className="stat-card">
-              <h3>Network Nodes</h3>
-              <div className="stat-value">
-                {mstData ? mstData.nodeCount || 'N/A' : 'Loading...'}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-project-diagram"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Network Nodes</h3>
+                  <div className="stat-value">
+                    {mstData ? mstData.nodeCount || 'N/A' : 'Loading...'}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="stat-card">
-              <h3>Optimized Connections</h3>
-              <div className="stat-value">
-                {mstData ? mstData.edgeCount || 'N/A' : 'Loading...'}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-exchange-alt"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Optimized Connections</h3>
+                  <div className="stat-value">
+                    {mstData ? mstData.edgeCount || 'N/A' : 'Loading...'}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="stat-card">
-              <h3>Total Distance</h3>
-              <div className="stat-value">
-                {mstData
-                  ? `${mstData.totalDistance?.toFixed(2)} km` || 'N/A'
-                  : 'Loading...'}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-route"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Total Distance</h3>
+                  <div className="stat-value">
+                    {mstData
+                      ? `${mstData.totalDistance?.toFixed(2)} km` || 'N/A'
+                      : 'Loading...'}
+                  </div>
+                </div>
               </div>
             </div>
             <div className="stat-card">
-              <h3>Efficiency Score</h3>
-              <div className="stat-value">
-                {mstData ? '94.8%' : 'Loading...'}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-tachometer-alt"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Efficiency Score</h3>
+                  <div className="stat-value">
+                    {mstData ? '94.8%' : 'Loading...'}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="recent-containers">
-          <h2>Network Optimization Visualization</h2>
+          <h2>
+            <i className="fas fa-network-wired"></i> Network Optimization
+            Visualization
+          </h2>
           <div className="mst-canvas-container">
             <canvas id="mst-canvas" className="mst-canvas"></canvas>
           </div>
@@ -531,85 +562,113 @@ const UnifiedDashboard = () => {
         <div className="dashboard-summary">
           <div className="stats-container">
             <div className="stat-card">
-              <h3>Active Containers</h3>
-              <div className="stat-value">{containers.length}</div>
-              <div className="stat-trend trend-up">↑ 12% from last month</div>
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-box"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Active Containers</h3>
+                  <div className="stat-value">{containers.length}</div>
+                </div>
+              </div>
             </div>
             <div className="stat-card">
-              <h3>In Transit</h3>
-              <div className="stat-value">
-                {containers.filter((c) => c.status === 'In Transit').length}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-truck-moving"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>In Transit</h3>
+                  <div className="stat-value">
+                    {containers.filter((c) => c.status === 'In Transit').length}
+                  </div>
+                </div>
               </div>
-              <div className="stat-trend trend-up">↑ 8% from last week</div>
             </div>
             <div className="stat-card">
-              <h3>Average Fill</h3>
-              <div className="stat-value">
-                {containers.length
-                  ? `${Math.round(
-                      containers.reduce(
-                        (acc, c) => acc + (c.fill_percentage || 0),
-                        0
-                      ) / containers.length
-                    )}%`
-                  : '0%'}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-fill-drip"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Average Fill</h3>
+                  <div className="stat-value">
+                    {containers.length
+                      ? `${Math.round(
+                          containers.reduce(
+                            (acc, c) => acc + (c.fill_percentage || 0),
+                            0
+                          ) / containers.length
+                        )}%`
+                      : '0%'}
+                  </div>
+                </div>
               </div>
-              <div className="stat-trend trend-up">↑ 5% improvement</div>
             </div>
             <div className="stat-card">
-              <h3>Urgent Status</h3>
-              <div className="stat-value">
-                {containers.filter((c) => c.priority === 'urgent').length}
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-exclamation-circle"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Urgent Status</h3>
+                  <div className="stat-value">
+                    {containers.filter((c) => c.priority === 'urgent').length}
+                  </div>
+                </div>
               </div>
-              <div className="stat-trend trend-down">↓ 15% reduction</div>
             </div>
           </div>
         </div>
 
         <div className="recent-containers">
-          <h2>Container Status Overview</h2>
-          <table className="container-table">
-            <thead>
-              <tr>
-                <th>Container ID</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Fill %</th>
-                <th>Location</th>
-              </tr>
-            </thead>
-            <tbody>
-              {containers.slice(0, 5).map((container) => (
-                <tr key={container.id || container.container_id}>
-                  <td>{container.id || container.container_id}</td>
-                  <td>{container.type || 'N/A'}</td>
-                  <td>
-                    <span
-                      className={`status-badge status-${
-                        container.status?.toLowerCase().replace(/\s/g, '-') ||
-                        'in-yard'
-                      }`}
-                    >
-                      {container.status || 'In Yard'}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className={`priority-${container.priority || 'normal'}`}
-                    >
-                      {container.priority
-                        ? container.priority.charAt(0).toUpperCase() +
-                          container.priority.slice(1)
-                        : 'Normal'}
-                    </span>
-                  </td>
-                  <td>{container.fill_percentage || 0}%</td>
-                  <td>{container.hub || 'N/A'}</td>
+          <h2>
+            <i className="fas fa-clipboard-list"></i> Container Status Overview
+          </h2>
+          <div className="table-responsive">
+            <table className="container-table">
+              <thead>
+                <tr>
+                  <th>Container ID</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Priority</th>
+                  <th>Fill %</th>
+                  <th>Location</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {containers.slice(0, 5).map((container) => (
+                  <tr key={container.id || container.container_id}>
+                    <td>{container.id || container.container_id}</td>
+                    <td>{container.type || 'N/A'}</td>
+                    <td>
+                      <span
+                        className={`status-badge status-${
+                          container.status?.toLowerCase().replace(/\s/g, '-') ||
+                          'in-yard'
+                        }`}
+                      >
+                        {container.status || 'In Yard'}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className={`priority-${container.priority || 'normal'}`}
+                      >
+                        {container.priority
+                          ? container.priority.charAt(0).toUpperCase() +
+                            container.priority.slice(1)
+                          : 'Normal'}
+                      </span>
+                    </td>
+                    <td>{container.fill_percentage || 0}%</td>
+                    <td>{container.hub || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
@@ -618,45 +677,62 @@ const UnifiedDashboard = () => {
   // Main render
   return (
     <div className="unified-dashboard">
-      <div className="page-title">Unified Container Management Dashboard</div>
-      <p className="welcome-message">
-        Monitor and manage all container operations from a single interface.
-        Coordinate logistics, track inventory, and optimize routes.
-      </p>
+      <div className="page-header">
+        <div className="page-header-content">
+          <h1 className="page-title">Container Yard Management System</h1>
+          <p className="welcome-message">
+            Monitor and manage all container operations from a single interface.
+            Coordinate logistics, track inventory, and optimize routes.
+          </p>
+        </div>
+      </div>
 
       {/* Notification area */}
       {notification && (
         <Alert
           variant={notification.type}
-          className="notification"
+          className={`notification ${
+            notification.type === 'danger'
+              ? 'error-notification'
+              : 'success-notification'
+          }`}
           onClose={() => setNotification(null)}
           dismissible
         >
-          {notification.message}
+          <div className="notification-icon">
+            <i
+              className={
+                notification.type === 'danger'
+                  ? 'fas fa-exclamation-circle'
+                  : 'fas fa-check-circle'
+              }
+            ></i>
+          </div>
+          <div className="notification-content">{notification.message}</div>
+          <button
+            className="notification-close"
+            onClick={() => setNotification(null)}
+          >
+            <i className="fas fa-times"></i>
+          </button>
         </Alert>
       )}
 
       <div className="dashboard-tabs">
         <button
-          className={`tab-button ${
-            activeTab === 'containers' ? 'active' : ''
-          } btn ${activeTab === 'containers' ? 'btn-primary' : 'btn-outline'}`}
+          className={`tab-button ${activeTab === 'containers' ? 'active' : ''}`}
           onClick={() => setActiveTab('containers')}
         >
           <i className="fas fa-box-open"></i> Container Management
         </button>
         <button
-          className={`tab-button ${activeTab === 'mst' ? 'active' : ''} btn ${
-            activeTab === 'mst' ? 'btn-primary' : 'btn-outline'
-          }`}
+          className={`tab-button ${activeTab === 'mst' ? 'active' : ''}`}
           onClick={() => setActiveTab('mst')}
         >
           <i className="fas fa-project-diagram"></i> Network Visualization
         </button>
         <button
-          className={`tab-button ${activeTab === 'stats' ? 'active' : ''} btn ${
-            activeTab === 'stats' ? 'btn-primary' : 'btn-outline'
-          }`}
+          className={`tab-button ${activeTab === 'stats' ? 'active' : ''}`}
           onClick={() => setActiveTab('stats')}
         >
           <i className="fas fa-chart-line"></i> Logistics Statistics
@@ -665,13 +741,13 @@ const UnifiedDashboard = () => {
 
       {/* Create Container Button */}
       <div className="dashboard-actions">
-        <button className="btn btn-primary btn-icon" onClick={openCreateModal}>
+        <button className="btn btn-primary" onClick={openCreateModal}>
           <i className="fas fa-plus"></i> Create New Container
         </button>
       </div>
 
       {/* Dashboard Content */}
-      <div className="dashboard-content">
+      <div className="dashboard-content animate-in">
         {activeTab === 'containers' && renderContainerCards()}
         {activeTab === 'mst' && renderMSTVisualizer()}
         {activeTab === 'stats' && renderStatistics()}

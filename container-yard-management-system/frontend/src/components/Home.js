@@ -176,7 +176,7 @@ const Home = () => {
                   Get Started
                 </Link>
                 <Link
-                  to="/unified-dashboard"
+                  to="/dashboard"
                   className="btn btn-outline"
                   style={{
                     background: 'transparent',
@@ -185,7 +185,7 @@ const Home = () => {
                     padding: '0.75rem 2rem',
                   }}
                 >
-                  New Unified Dashboard
+                  Dashboard
                 </Link>
               </div>
             </div>

@@ -1,16 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  Container,
-  Row,
-  Col,
-  Card,
-  Table,
-  Button,
-  Form,
-  Modal,
-  Alert,
-} from 'react-bootstrap';
+import { Alert, Button } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
+import '../styles/App.css';
 
 const Containers = () => {
   // Authentication context
@@ -104,6 +95,7 @@ const Containers = () => {
             urgency_status: 'High',
             created_at: '2025-04-20T10:30:00',
             updated_at: '2025-04-21T08:15:00',
+            fill_percentage: 85,
           },
           {
             id: 'C1002',
@@ -116,6 +108,7 @@ const Containers = () => {
             urgency_status: 'Medium',
             created_at: '2025-04-19T14:20:00',
             updated_at: '2025-04-19T18:45:00',
+            fill_percentage: 60,
           },
           {
             id: 'C1003',
@@ -128,6 +121,7 @@ const Containers = () => {
             urgency_status: 'Low',
             created_at: '2025-04-18T09:10:00',
             updated_at: '2025-04-22T11:30:00',
+            fill_percentage: 95,
           },
         ];
         setContainers(mockContainers);
@@ -170,6 +164,7 @@ const Containers = () => {
         ...currentContainer,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        fill_percentage: Math.floor(Math.random() * 40) + 60, // Random fill percentage between 60-100
       };
 
       setContainers([...containers, newContainer]);
@@ -283,373 +278,553 @@ const Containers = () => {
     });
   };
 
+  // Get progress bar color based on urgency and fill percentage
+  const getProgressColor = (fillPercentage, urgency) => {
+    if (urgency === 'Critical' || urgency === 'High') {
+      return 'var(--status-delayed)'; // Red for urgent containers
+    } else if (fillPercentage >= 90) {
+      return 'var(--status-delayed)'; // Red for high fill
+    } else if (fillPercentage >= 75) {
+      return 'var(--status-in-transit)'; // Yellow/amber for approaching threshold
+    } else {
+      return 'var(--status-delivered)'; // Green for normal levels
+    }
+  };
+
   return (
-    <Container fluid className="mt-4">
-      {/* Header and alert message */}
-      <Row className="mb-4">
-        <Col>
-          <h2>Container Management</h2>
-          {alert.show && (
-            <Alert
-              variant={alert.variant}
-              onClose={() => setAlert({ ...alert, show: false })}
-              dismissible
-            >
-              {alert.message}
-            </Alert>
-          )}
-        </Col>
-      </Row>
+    <div className="containers-page">
+      {/* Header */}
+      <div className="page-header">
+        <div className="page-header-content">
+          <h1 className="page-title">Container Management</h1>
+          <p className="welcome-message">
+            Create, manage, and track shipping containers across your logistics
+            network.
+          </p>
+        </div>
+      </div>
+
+      {/* Notification area */}
+      {alert.show && (
+        <div
+          className={`notification ${
+            alert.variant === 'danger'
+              ? 'error-notification'
+              : 'success-notification'
+          }`}
+        >
+          <div className="notification-icon">
+            <i
+              className={
+                alert.variant === 'danger'
+                  ? 'fas fa-exclamation-circle'
+                  : 'fas fa-check-circle'
+              }
+            ></i>
+          </div>
+          <div className="notification-content">{alert.message}</div>
+          <button
+            className="notification-close"
+            onClick={() => setAlert({ ...alert, show: false })}
+          >
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+      )}
 
       {/* Add container button */}
-      <Row className="mb-4">
-        <Col className="d-flex justify-content-end">
-          <Button
-            variant="primary"
-            onClick={() => {
-              resetForm();
-              setShowAddModal(true);
-            }}
-          >
-            <i className="fas fa-plus me-2"></i>
-            Add New Container
-          </Button>
-        </Col>
-      </Row>
+      <div className="dashboard-actions">
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            resetForm();
+            setShowAddModal(true);
+          }}
+        >
+          <i className="fas fa-plus"></i> Create New Container
+        </button>
+      </div>
 
-      {/* Containers table */}
-      <Row>
-        <Col>
-          <Card>
-            <Card.Header as="h5">Container Records</Card.Header>
-            <Card.Body>
-              {loading ? (
-                <div className="text-center my-4">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                  <p className="mt-2">Loading containers...</p>
-                </div>
-              ) : error ? (
-                <Alert variant="danger">{error}</Alert>
-              ) : containers.length === 0 ? (
-                <div className="text-center my-4">
-                  <p>
-                    No containers found. Click "Add New Container" to add your
-                    first container.
-                  </p>
-                </div>
-              ) : (
-                <Table responsive striped hover>
-                  <thead>
-                    <tr>
-                      <th>Container ID</th>
-                      <th>Status</th>
-                      <th>Pickup City</th>
-                      <th>Destination City</th>
-                      <th>Total Items</th>
-                      <th>Weight (kg)</th>
-                      <th>Urgency</th>
-                      <th>Actions</th>
+      {/* Dashboard Content */}
+      <div className="dashboard-content animate-in">
+        <div className="recent-containers">
+          <h2>
+            <i className="fas fa-boxes"></i> Container Records
+          </h2>
+          {loading ? (
+            <div className="loading-spinner">
+              <div className="spinner"></div>
+              <p>Loading containers...</p>
+            </div>
+          ) : error ? (
+            <Alert variant="danger">{error}</Alert>
+          ) : containers.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-box-open fa-3x"></i>
+              <p>
+                No containers found. Click "Create New Container" to add your
+                first container.
+              </p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="container-table">
+                <thead>
+                  <tr>
+                    <th>Container ID</th>
+                    <th>Status</th>
+                    <th>Pickup City</th>
+                    <th>Destination City</th>
+                    <th>Items</th>
+                    <th>Weight (kg)</th>
+                    <th>Urgency</th>
+                    <th>Fill %</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {containers.map((container) => (
+                    <tr key={container.id}>
+                      <td>{container.container_id}</td>
+                      <td>
+                        <span
+                          className={`status-badge status-${container.status
+                            .toLowerCase()
+                            .replace(/\s+/g, '-')}`}
+                        >
+                          {container.status}
+                        </span>
+                      </td>
+                      <td>{container.pickup_city}</td>
+                      <td>{container.destination_city}</td>
+                      <td>{container.total_items}</td>
+                      <td>{container.total_weight}</td>
+                      <td>
+                        <span
+                          className={`status-badge priority-${container.urgency_status.toLowerCase()}`}
+                        >
+                          {container.urgency_status}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="inline-progress">
+                          <div className="progress-bar-container">
+                            <div
+                              className="progress-bar"
+                              style={{
+                                width: `${container.fill_percentage}%`,
+                                backgroundColor: getProgressColor(
+                                  container.fill_percentage,
+                                  container.urgency_status
+                                ),
+                              }}
+                            ></div>
+                          </div>
+                          <span className="fill-text">
+                            {container.fill_percentage}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="action-buttons">
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => editContainer(container)}
+                        >
+                          <i className="fas fa-edit"></i>
+                        </button>
+                        <button
+                          className="btn btn-danger btn-sm"
+                          onClick={() => handleDeleteContainer(container.id)}
+                        >
+                          <i className="fas fa-trash"></i>
+                        </button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {containers.map((container) => (
-                      <tr key={container.id}>
-                        <td>{container.container_id}</td>
-                        <td>
-                          <span
-                            className={`status-${container.status
-                              .toLowerCase()
-                              .replace(/\s+/g, '-')}`}
-                          >
-                            {container.status}
-                          </span>
-                        </td>
-                        <td>{container.pickup_city}</td>
-                        <td>{container.destination_city}</td>
-                        <td>{container.total_items}</td>
-                        <td>{container.total_weight}</td>
-                        <td>
-                          <span
-                            className={`urgency-${container.urgency_status.toLowerCase()}`}
-                          >
-                            {container.urgency_status}
-                          </span>
-                        </td>
-                        <td>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-2"
-                            onClick={() => editContainer(container)}
-                          >
-                            <i className="fas fa-edit"></i>
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDeleteContainer(container.id)}
-                          >
-                            <i className="fas fa-trash"></i>
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Add Container Modal */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Container</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Container ID</Form.Label>
-              <Form.Control
-                type="text"
-                name="container_id"
-                value={currentContainer.container_id}
-                onChange={handleInputChange}
-                placeholder="C1234"
-                required
-              />
-              <Form.Text className="text-muted">
-                Container ID should start with 'C' followed by numbers.
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Control
-                as="select"
-                name="status"
-                value={currentContainer.status}
-                onChange={handleInputChange}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="card modal-card animate-in">
+            <div className="card-header">
+              <h2>
+                <i className="fas fa-plus-circle"></i> Add New Container
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowAddModal(false)}
               >
-                {statusOptions.map((status, index) => (
-                  <option key={index} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="card-body">
+              <form className="container-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Container ID</label>
+                    <input
+                      type="text"
+                      name="container_id"
+                      value={currentContainer.container_id}
+                      onChange={handleInputChange}
+                      placeholder="C1234"
+                      required
+                    />
+                    <span className="help-text">
+                      Container ID should start with 'C' followed by numbers.
+                    </span>
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Pickup City</Form.Label>
-              <Form.Control
-                as="select"
-                name="pickup_city"
-                value={currentContainer.pickup_city}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Pickup City</option>
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      name="status"
+                      value={currentContainer.status}
+                      onChange={handleInputChange}
+                    >
+                      {statusOptions.map((status, index) => (
+                        <option key={index} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Urgency Status</label>
+                    <select
+                      name="urgency_status"
+                      value={currentContainer.urgency_status}
+                      onChange={handleInputChange}
+                    >
+                      {urgencyOptions.map((option, index) => (
+                        <option key={index} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Destination City</Form.Label>
-              <Form.Control
-                as="select"
-                name="destination_city"
-                value={currentContainer.destination_city}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Destination City</option>
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Pickup City</label>
+                    <select
+                      name="pickup_city"
+                      value={currentContainer.pickup_city}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Pickup City</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Destination City</label>
+                    <select
+                      name="destination_city"
+                      value={currentContainer.destination_city}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Destination City</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Total Items</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                name="total_items"
-                value={currentContainer.total_items}
-                onChange={handleInputChange}
-              />
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Total Items</label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="total_items"
+                      value={currentContainer.total_items}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Total Weight (kg)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      name="total_weight"
+                      value={currentContainer.total_weight}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Total Weight (kg)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                min="0"
-                name="total_weight"
-                value={currentContainer.total_weight}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Urgency Status</Form.Label>
-              <Form.Control
-                as="select"
-                name="urgency_status"
-                value={currentContainer.urgency_status}
-                onChange={handleInputChange}
-              >
-                {urgencyOptions.map((option, index) => (
-                  <option key={index} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleAddContainer}>
-            Add Container
-          </Button>
-        </Modal.Footer>
-      </Modal>
+                <div className="button-group">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowAddModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleAddContainer}
+                  >
+                    Add Container
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Container Modal */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Container</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Container ID</Form.Label>
-              <Form.Control
-                type="text"
-                name="container_id"
-                value={currentContainer.container_id}
-                onChange={handleInputChange}
-                disabled
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Control
-                as="select"
-                name="status"
-                value={currentContainer.status}
-                onChange={handleInputChange}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="card modal-card animate-in">
+            <div className="card-header">
+              <h2>
+                <i className="fas fa-edit"></i> Edit Container
+              </h2>
+              <button
+                className="modal-close"
+                onClick={() => setShowEditModal(false)}
               >
-                {statusOptions.map((status, index) => (
-                  <option key={index} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <div className="card-body">
+              <form className="container-form">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Container ID</label>
+                    <input
+                      type="text"
+                      name="container_id"
+                      value={currentContainer.container_id}
+                      onChange={handleInputChange}
+                      disabled
+                    />
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Pickup City</Form.Label>
-              <Form.Control
-                as="select"
-                name="pickup_city"
-                value={currentContainer.pickup_city}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Pickup City</option>
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Status</label>
+                    <select
+                      name="status"
+                      value={currentContainer.status}
+                      onChange={handleInputChange}
+                    >
+                      {statusOptions.map((status, index) => (
+                        <option key={index} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Urgency Status</label>
+                    <select
+                      name="urgency_status"
+                      value={currentContainer.urgency_status}
+                      onChange={handleInputChange}
+                    >
+                      {urgencyOptions.map((option, index) => (
+                        <option key={index} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Destination City</Form.Label>
-              <Form.Control
-                as="select"
-                name="destination_city"
-                value={currentContainer.destination_city}
-                onChange={handleInputChange}
-                required
-              >
-                <option value="">Select Destination City</option>
-                {cities.map((city, index) => (
-                  <option key={index} value={city}>
-                    {city}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Pickup City</label>
+                    <select
+                      name="pickup_city"
+                      value={currentContainer.pickup_city}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Pickup City</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Destination City</label>
+                    <select
+                      name="destination_city"
+                      value={currentContainer.destination_city}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Destination City</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Total Items</Form.Label>
-              <Form.Control
-                type="number"
-                min="1"
-                name="total_items"
-                value={currentContainer.total_items}
-                onChange={handleInputChange}
-              />
-            </Form.Group>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Total Items</label>
+                    <input
+                      type="number"
+                      min="1"
+                      name="total_items"
+                      value={currentContainer.total_items}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Total Weight (kg)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      name="total_weight"
+                      value={currentContainer.total_weight}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Total Weight (kg)</Form.Label>
-              <Form.Control
-                type="number"
-                step="0.01"
-                min="0"
-                name="total_weight"
-                value={currentContainer.total_weight}
-                onChange={handleInputChange}
-                required
-              />
-            </Form.Group>
+                <div className="button-group">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setShowEditModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleUpdateContainer}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
-            <Form.Group className="mb-3">
-              <Form.Label>Urgency Status</Form.Label>
-              <Form.Control
-                as="select"
-                name="urgency_status"
-                value={currentContainer.urgency_status}
-                onChange={handleInputChange}
-              >
-                {urgencyOptions.map((option, index) => (
-                  <option key={index} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </Form.Control>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowEditModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleUpdateContainer}>
-            Save Changes
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
+      <style jsx>{`
+        .inline-progress {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .progress-bar-container {
+          width: 80px;
+          height: 8px;
+          background: rgba(156, 163, 175, 0.2);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .progress-bar {
+          height: 100%;
+          transition: width 0.3s ease;
+        }
+        .fill-text {
+          font-size: 0.75rem;
+          color: var(--dark-text);
+        }
+        .action-buttons {
+          display: flex;
+          gap: 8px;
+        }
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          backdrop-filter: blur(4px);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+        .modal-card {
+          width: 90%;
+          max-width: 600px;
+          max-height: 90vh;
+          overflow-y: auto;
+        }
+        .modal-close {
+          background: none;
+          border: none;
+          font-size: 1.25rem;
+          cursor: pointer;
+          color: var(--light-text);
+        }
+        .loading-spinner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 3px solid rgba(59, 130, 246, 0.1);
+          border-top-color: var(--primary-color);
+          animation: spinner 0.8s linear infinite;
+          margin-bottom: 1rem;
+        }
+        @keyframes spinner {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        .priority-low {
+          background-color: rgba(22, 163, 74, 0.1) !important;
+          color: var(--status-delivered) !important;
+        }
+        .priority-medium {
+          background-color: rgba(59, 130, 246, 0.1) !important;
+          color: var(--status-at-yard) !important;
+        }
+        .priority-high,
+        .priority-critical {
+          background-color: rgba(239, 68, 68, 0.1) !important;
+          color: var(--status-delayed) !important;
+        }
+      `}</style>
+    </div>
   );
 };
 

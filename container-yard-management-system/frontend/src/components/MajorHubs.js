@@ -12,6 +12,8 @@ const MajorHubs = () => {
   const [selectedSubHub, setSelectedSubHub] = useState(null);
   // State for loading status
   const [loading, setLoading] = useState(true);
+  // State for active containers at the hub
+  const [hubContainers, setHubContainers] = useState([]);
 
   // Indian states and cities data
   const indianHubsData = [
@@ -19,156 +21,249 @@ const MajorHubs = () => {
       state: 'Andhra Pradesh',
       city: 'Vijayawada',
       coordinates: { lat: 16.504347, lng: 80.645843 },
+      containerCount: 12,
+      inTransit: 3,
+      inYard: 9,
     },
     {
       state: 'Arunachal Pradesh',
       city: 'Itanagar',
       coordinates: { lat: 27.091086, lng: 93.596806 },
+      containerCount: 5,
+      inTransit: 2,
+      inYard: 3,
     },
     {
       state: 'Assam',
       city: 'Guwahati',
       coordinates: { lat: 26.135341, lng: 91.735217 },
+      containerCount: 8,
+      inTransit: 1,
+      inYard: 7,
     },
     {
       state: 'Bihar',
       city: 'Patna',
       coordinates: { lat: 25.587789, lng: 85.142771 },
+      containerCount: 10,
+      inTransit: 4,
+      inYard: 6,
     },
     {
       state: 'Chhattisgarh',
       city: 'Raipur',
       coordinates: { lat: 21.241661, lng: 81.638798 },
+      containerCount: 7,
+      inTransit: 3,
+      inYard: 4,
     },
     {
       state: 'Goa',
       city: 'Panaji',
       coordinates: { lat: 15.482654, lng: 73.833124 },
+      containerCount: 6,
+      inTransit: 2,
+      inYard: 4,
     },
     {
       state: 'Gujarat',
       city: 'Ahmedabad',
       coordinates: { lat: 23.030405, lng: 72.562137 },
+      containerCount: 15,
+      inTransit: 5,
+      inYard: 10,
     },
     {
       state: 'Haryana',
       city: 'Gurugram',
       coordinates: { lat: 28.465335, lng: 77.025125 },
+      containerCount: 20,
+      inTransit: 10,
+      inYard: 10,
     },
     {
       state: 'Himachal Pradesh',
       city: 'Shimla',
       coordinates: { lat: 31.106605, lng: 77.180773 },
+      containerCount: 4,
+      inTransit: 1,
+      inYard: 3,
     },
     {
       state: 'Jharkhand',
       city: 'Ranchi',
       coordinates: { lat: 23.348013, lng: 85.314384 },
+      containerCount: 9,
+      inTransit: 3,
+      inYard: 6,
     },
     {
       state: 'Karnataka',
       city: 'Bengaluru',
       coordinates: { lat: 12.97365, lng: 77.590186 },
+      containerCount: 25,
+      inTransit: 10,
+      inYard: 15,
     },
     {
       state: 'Kerala',
       city: 'Kochi',
       coordinates: { lat: 9.929815, lng: 76.277007 },
+      containerCount: 11,
+      inTransit: 4,
+      inYard: 7,
     },
     {
       state: 'Madhya Pradesh',
       city: 'Indore',
       coordinates: { lat: 22.714174, lng: 75.854346 },
+      containerCount: 14,
+      inTransit: 5,
+      inYard: 9,
     },
     {
       state: 'Maharashtra',
       city: 'Mumbai',
       coordinates: { lat: 19.069646, lng: 72.880307 },
+      containerCount: 47,
+      inTransit: 18,
+      inYard: 29,
     },
     {
       state: 'Manipur',
       city: 'Imphal',
       coordinates: { lat: 24.813476, lng: 93.944452 },
+      containerCount: 3,
+      inTransit: 1,
+      inYard: 2,
     },
     {
       state: 'Meghalaya',
       city: 'Shillong',
       coordinates: { lat: 25.578503, lng: 91.891416 },
+      containerCount: 4,
+      inTransit: 1,
+      inYard: 3,
     },
     {
       state: 'Mizoram',
       city: 'Aizawl',
       coordinates: { lat: 23.73101, lng: 92.711071 },
+      containerCount: 2,
+      inTransit: 1,
+      inYard: 1,
     },
     {
       state: 'Nagaland',
       city: 'Dimapur',
       coordinates: { lat: 25.896172, lng: 93.718831 },
+      containerCount: 5,
+      inTransit: 2,
+      inYard: 3,
     },
     {
       state: 'Odisha',
       city: 'Bhubaneswar',
       coordinates: { lat: 20.297132, lng: 85.830375 },
+      containerCount: 23,
+      inTransit: 8,
+      inYard: 15,
     },
     {
       state: 'Punjab',
       city: 'Ludhiana',
       coordinates: { lat: 30.90374, lng: 75.857833 },
+      containerCount: 10,
+      inTransit: 4,
+      inYard: 6,
     },
     {
       state: 'Rajasthan',
       city: 'Jaipur',
       coordinates: { lat: 26.921195, lng: 75.784667 },
+      containerCount: 18,
+      inTransit: 7,
+      inYard: 11,
     },
     {
       state: 'Sikkim',
       city: 'Gangtok',
       coordinates: { lat: 27.324654, lng: 88.613151 },
+      containerCount: 2,
+      inTransit: 1,
+      inYard: 1,
     },
     {
       state: 'Tamil Nadu',
       city: 'Chennai',
       coordinates: { lat: 13.084113, lng: 80.267506 },
+      containerCount: 30,
+      inTransit: 12,
+      inYard: 18,
     },
     {
       state: 'Telangana',
       city: 'Hyderabad',
       coordinates: { lat: 17.379828, lng: 78.489978 },
+      containerCount: 28,
+      inTransit: 10,
+      inYard: 18,
     },
     {
       state: 'Tripura',
       city: 'Agartala',
       coordinates: { lat: 23.835036, lng: 91.278077 },
+      containerCount: 3,
+      inTransit: 1,
+      inYard: 2,
     },
     {
       state: 'Uttar Pradesh',
       city: 'Lucknow',
       coordinates: { lat: 26.84023, lng: 80.950943 },
+      containerCount: 22,
+      inTransit: 9,
+      inYard: 13,
     },
     {
       state: 'Uttarakhand',
       city: 'Dehradun',
       coordinates: { lat: 30.319949, lng: 78.032139 },
+      containerCount: 6,
+      inTransit: 2,
+      inYard: 4,
     },
     {
       state: 'West Bengal',
       city: 'Kolkata',
       coordinates: { lat: 22.565836, lng: 88.363023 },
+      containerCount: 35,
+      inTransit: 15,
+      inYard: 20,
     },
     {
       state: 'Delhi',
       city: 'New Delhi',
       coordinates: { lat: 28.613407, lng: 77.216016 },
+      containerCount: 40,
+      inTransit: 20,
+      inYard: 20,
     },
     {
       state: 'Jammu and Kashmir',
       city: 'Srinagar',
       coordinates: { lat: 34.08646, lng: 74.800107 },
+      containerCount: 3,
+      inTransit: 1,
+      inYard: 2,
     },
     {
       state: 'Ladakh',
       city: 'Leh',
       coordinates: { lat: 34.162043, lng: 77.577688 },
+      containerCount: 2,
+      inTransit: 1,
+      inYard: 1,
     },
   ];
 
@@ -345,11 +440,51 @@ const MajorHubs = () => {
       );
       setSubHubs(stateSubHubs);
       setSelectedSubHub(null); // Reset selected sub-hub
+
+      // Generate mock container data for the selected hub
+      generateMockContainers(hub);
     } else {
       setSelectedHub(null);
       setSubHubs([]);
       setSelectedSubHub(null);
+      setHubContainers([]);
     }
+  };
+
+  // Generate mock container data for the selected hub
+  const generateMockContainers = (hub) => {
+    const containerTypes = ['40HC', '20GP', '40GP', '45HC', '20RF'];
+    const statuses = ['In Yard', 'In Transit', 'Delivered'];
+    const contents = [
+      'Electronics',
+      'Textiles',
+      'Machinery',
+      'Automotive Parts',
+      'Furniture',
+      'Food Products',
+      'Chemicals',
+    ];
+
+    // Generate between 3-8 containers
+    const count = Math.floor(Math.random() * 6) + 3;
+    const mockContainers = [];
+
+    for (let i = 0; i < count; i++) {
+      mockContainers.push({
+        id: `${hub.city.substring(0, 3).toUpperCase()}${Math.floor(
+          1000 + Math.random() * 9000
+        )}`,
+        type: containerTypes[Math.floor(Math.random() * containerTypes.length)],
+        status: statuses[Math.floor(Math.random() * statuses.length)],
+        contents: contents[Math.floor(Math.random() * contents.length)],
+        fillPercentage: Math.floor(Math.random() * 40) + 60, // 60-100%
+        arrivalDate: new Date(
+          Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000
+        ).toLocaleDateString(),
+      });
+    }
+
+    setHubContainers(mockContainers);
   };
 
   // Handle sub-hub selection
@@ -370,85 +505,61 @@ const MajorHubs = () => {
   };
 
   return (
-    <div className="major-hubs-container">
-      <div className="major-hubs-header">
-        <h1>Major Indian City Hubs</h1>
-        <p>
-          Select a city to view its location details, coordinates, and sub-hubs
-        </p>
+    <div className="major-hubs-page">
+      <div className="page-header">
+        <div className="page-header-content">
+          <h1 className="page-title">Major Logistics Hubs</h1>
+          <p className="welcome-message">
+            View and manage container hubs across India. Monitor container
+            counts, locations, and operational statistics.
+          </p>
+        </div>
       </div>
 
-      <div className="major-hubs-content">
-        {loading ? (
-          <div className="loading">Loading hub data...</div>
-        ) : (
-          <>
-            <div className="hub-selector">
-              <label htmlFor="hubDropdown">Select Major City Hub:</label>
-              <select
-                id="hubDropdown"
-                className="hub-dropdown"
-                onChange={handleHubSelection}
-                defaultValue=""
-              >
-                <option value="">-- Select a Major Hub --</option>
-                {hubs.map((hub) => (
-                  <option key={`${hub.state}-${hub.city}`} value={hub.city}>
-                    {hub.city}, {hub.state}
-                  </option>
-                ))}
-              </select>
+      <div className="dashboard-content animate-in">
+        <div className="dashboard-grid">
+          <div className="card">
+            <div className="card-header">
+              <h2>
+                <i className="fas fa-search-location"></i> Hub Selector
+              </h2>
             </div>
-
-            {selectedHub && (
-              <div className="hub-details">
-                <h2>
-                  {selectedHub.city}, {selectedHub.state}
-                </h2>
-                <div className="hub-info">
-                  <div className="info-item">
-                    <span className="info-label">State:</span>
-                    <span className="info-value">{selectedHub.state}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">City:</span>
-                    <span className="info-value">{selectedHub.city}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">Coordinates:</span>
-                    <span className="info-value">
-                      {formatCoordinates(selectedHub.coordinates)}
-                    </span>
-                  </div>
+            <div className="card-body">
+              {loading ? (
+                <div className="loading-spinner">
+                  <div className="spinner"></div>
+                  <p>Loading hub data...</p>
                 </div>
-
-                <div className="coordinates-display">
-                  <h3>Coordinates</h3>
-                  <div className="coordinate-box">
-                    <div className="coordinate-item">
-                      <span className="coordinate-label">Latitude:</span>
-                      <span className="coordinate-value">
-                        {selectedHub.coordinates.lat.toFixed(6)}
-                      </span>
-                    </div>
-                    <div className="coordinate-item">
-                      <span className="coordinate-label">Longitude:</span>
-                      <span className="coordinate-value">
-                        {selectedHub.coordinates.lng.toFixed(6)}
-                      </span>
-                    </div>
+              ) : (
+                <form>
+                  <div className="form-group">
+                    <label htmlFor="hubDropdown">
+                      Select Major Logistics Hub:
+                    </label>
+                    <select
+                      id="hubDropdown"
+                      onChange={handleHubSelection}
+                      defaultValue=""
+                    >
+                      <option value="">-- Select a Major Hub --</option>
+                      {hubs.map((hub) => (
+                        <option
+                          key={`${hub.state}-${hub.city}`}
+                          value={hub.city}
+                        >
+                          {hub.city}, {hub.state}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </div>
 
-                {/* Sub-hubs section */}
-                {subHubs.length > 0 && (
-                  <div className="sub-hubs-section">
-                    <h3>Sub-Hubs in {selectedHub.state}</h3>
-                    <div className="sub-hub-selector">
-                      <label htmlFor="subHubDropdown">Select Sub-Hub:</label>
+                  {selectedHub && subHubs.length > 0 && (
+                    <div className="form-group">
+                      <label htmlFor="subHubDropdown">
+                        Select Sub-Hub Location:
+                      </label>
                       <select
                         id="subHubDropdown"
-                        className="hub-dropdown"
                         onChange={handleSubHubSelection}
                         defaultValue=""
                       >
@@ -463,55 +574,275 @@ const MajorHubs = () => {
                         ))}
                       </select>
                     </div>
+                  )}
+                </form>
+              )}
+            </div>
+          </div>
 
-                    {selectedSubHub && (
-                      <div className="sub-hub-details">
-                        <h4>{selectedSubHub.city} Details</h4>
-                        <div className="hub-info">
-                          <div className="info-item">
-                            <span className="info-label">City:</span>
-                            <span className="info-value">
-                              {selectedSubHub.city}
-                            </span>
-                          </div>
-                          <div className="info-item">
-                            <span className="info-label">Coordinates:</span>
-                            <span className="info-value">
-                              {formatCoordinates(selectedSubHub.coordinates)}
-                            </span>
-                          </div>
-                        </div>
+          {selectedHub && (
+            <div className="card">
+              <div className="card-header">
+                <h2>
+                  <i className="fas fa-map-marker-alt"></i> Hub Details
+                </h2>
+              </div>
+              <div className="card-body">
+                <h3>
+                  {selectedHub.city}, {selectedHub.state}
+                </h3>
 
-                        <div className="coordinates-display">
-                          <h4>Precise Coordinates</h4>
-                          <div className="coordinate-box">
-                            <div className="coordinate-item">
-                              <span className="coordinate-label">
-                                Latitude:
-                              </span>
-                              <span className="coordinate-value">
-                                {selectedSubHub.coordinates.lat.toFixed(6)}
-                              </span>
-                            </div>
-                            <div className="coordinate-item">
-                              <span className="coordinate-label">
-                                Longitude:
-                              </span>
-                              <span className="coordinate-value">
-                                {selectedSubHub.coordinates.lng.toFixed(6)}
-                              </span>
-                            </div>
-                          </div>
+                <div className="stats-container hub-stats">
+                  <div className="stat-card">
+                    <div className="stat-card-inner">
+                      <div className="stat-icon">
+                        <i className="fas fa-boxes"></i>
+                      </div>
+                      <div className="stat-content">
+                        <h3>Container Count</h3>
+                        <div className="stat-value">
+                          {selectedHub.containerCount || 'N/A'}
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
-                )}
+                  <div className="stat-card">
+                    <div className="stat-card-inner">
+                      <div className="stat-icon">
+                        <i className="fas fa-truck-moving"></i>
+                      </div>
+                      <div className="stat-content">
+                        <h3>In Transit</h3>
+                        <div className="stat-value">
+                          {selectedHub.inTransit || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-card-inner">
+                      <div className="stat-icon">
+                        <i className="fas fa-warehouse"></i>
+                      </div>
+                      <div className="stat-content">
+                        <h3>In Yard</h3>
+                        <div className="stat-value">
+                          {selectedHub.inYard || 'N/A'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="info-card hub-location">
+                  <div className="info-card-header">
+                    <h3>
+                      <i className="fas fa-map-pin"></i> Location Details
+                    </h3>
+                  </div>
+                  <div className="info-card-body">
+                    <div className="info-item">
+                      <span className="info-label">State:</span>
+                      <span className="info-value">{selectedHub.state}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">City:</span>
+                      <span className="info-value">{selectedHub.city}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Latitude:</span>
+                      <span className="info-value">
+                        {selectedHub.coordinates.lat.toFixed(6)}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Longitude:</span>
+                      <span className="info-value">
+                        {selectedHub.coordinates.lng.toFixed(6)}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Full Coordinates:</span>
+                      <span className="info-value">
+                        {formatCoordinates(selectedHub.coordinates)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-          </>
-        )}
+            </div>
+          )}
+
+          {selectedSubHub && (
+            <div className="card">
+              <div className="card-header">
+                <h2>
+                  <i className="fas fa-industry"></i> Sub-Hub Details
+                </h2>
+              </div>
+              <div className="card-body">
+                <h3>{selectedSubHub.city}</h3>
+
+                <div className="info-card hub-location">
+                  <div className="info-card-header">
+                    <h3>
+                      <i className="fas fa-map-pin"></i> Location Details
+                    </h3>
+                  </div>
+                  <div className="info-card-body">
+                    <div className="info-item">
+                      <span className="info-label">State:</span>
+                      <span className="info-value">{selectedSubHub.state}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">City:</span>
+                      <span className="info-value">{selectedSubHub.city}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Latitude:</span>
+                      <span className="info-value">
+                        {selectedSubHub.coordinates.lat.toFixed(6)}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Longitude:</span>
+                      <span className="info-value">
+                        {selectedSubHub.coordinates.lng.toFixed(6)}
+                      </span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-label">Full Coordinates:</span>
+                      <span className="info-value">
+                        {formatCoordinates(selectedSubHub.coordinates)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedHub && hubContainers.length > 0 && (
+            <div className="card full-width">
+              <div className="card-header">
+                <h2>
+                  <i className="fas fa-shipping-fast"></i> Active Containers at{' '}
+                  {selectedHub.city}
+                </h2>
+              </div>
+              <div className="card-body">
+                <div className="table-responsive">
+                  <table className="container-table">
+                    <thead>
+                      <tr>
+                        <th>Container ID</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Contents</th>
+                        <th>Fill %</th>
+                        <th>Arrival Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hubContainers.map((container, index) => (
+                        <tr key={index}>
+                          <td>{container.id}</td>
+                          <td>{container.type}</td>
+                          <td>
+                            <span
+                              className={`status-badge status-${container.status
+                                .toLowerCase()
+                                .replace(/\s/g, '-')}`}
+                            >
+                              {container.status}
+                            </span>
+                          </td>
+                          <td>{container.contents}</td>
+                          <td>
+                            <div className="inline-progress">
+                              <div className="progress-bar-container">
+                                <div
+                                  className="progress-bar"
+                                  style={{
+                                    width: `${container.fillPercentage}%`,
+                                    backgroundColor:
+                                      container.fillPercentage >= 90
+                                        ? 'var(--status-delayed)'
+                                        : container.fillPercentage >= 75
+                                        ? 'var(--status-in-transit)'
+                                        : 'var(--status-delivered)',
+                                  }}
+                                ></div>
+                              </div>
+                              <span className="fill-text">
+                                {container.fillPercentage}%
+                              </span>
+                            </div>
+                          </td>
+                          <td>{container.arrivalDate}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      <style jsx>{`
+        .hub-stats {
+          margin-bottom: var(--spacing-lg);
+        }
+        .hub-location {
+          margin-bottom: var(--spacing-md);
+        }
+        .inline-progress {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .progress-bar-container {
+          width: 80px;
+          height: 8px;
+          background: rgba(156, 163, 175, 0.2);
+          border-radius: 4px;
+          overflow: hidden;
+        }
+        .progress-bar {
+          height: 100%;
+          transition: width 0.3s ease;
+        }
+        .fill-text {
+          font-size: 0.75rem;
+          color: var(--dark-text);
+        }
+        .full-width {
+          grid-column: 1 / -1;
+        }
+        .loading-spinner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 2rem;
+        }
+        .spinner {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          border: 3px solid rgba(59, 130, 246, 0.1);
+          border-top-color: var(--primary-color);
+          animation: spinner 0.8s linear infinite;
+          margin-bottom: 1rem;
+        }
+        @keyframes spinner {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+      `}</style>
     </div>
   );
 };
