@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from services.route_visualizer import RouteVisualizer
 from services.logistics_optimizer import get_hubs_data
+from services.mst_service import mst_optimizer  # Import MST optimizer
 
 visualization_bp = Blueprint('visualization', __name__)
 route_visualizer = RouteVisualizer()
@@ -123,6 +124,51 @@ def visualize_all_hubs():
         'success': True,
         'map_file': result['map_file'],
         'map_url': f"/api/visualize/maps/{result['map_file']}",
+        'hub_count': result['hub_count']
+    }), 200
+
+@visualization_bp.route('/api/visualize/mst', methods=['GET'])
+def visualize_mst():
+    """Generate and return a visualization of the minimum spanning tree of the logistics network"""
+    # Get hub information
+    major_hubs, hub_data = get_hubs_data()
+    
+    # Build MST using the hub data
+    mst_edges, total_distance = mst_optimizer.build_mst(hub_data)
+    
+    if not mst_edges:
+        return jsonify({
+            'success': False,
+            'message': 'Not enough hubs to build MST or error building MST'
+        }), 400
+    
+    # Create a map with the MST visualization
+    # Prepare data for visualization with hub details
+    hub_details = {}
+    for major_id, hubs in hub_data.items():
+        for hub in hubs:
+            hub_details[hub['id']] = {
+                'name': hub['name'],
+                'coordinates': hub['coordinates'],
+                'major_hub': major_hubs[major_id]['name'] if major_id in major_hubs else 'Unknown'
+            }
+    
+    # Create MST visualization
+    result = route_visualizer.create_mst_map(mst_edges, hub_details)
+    
+    if not result['success']:
+        return jsonify({
+            'success': False,
+            'message': result.get('error', 'Failed to generate MST visualization')
+        }), 500
+    
+    # Return the MST network data for visualization
+    return jsonify({
+        'success': True,
+        'map_file': result['map_file'],
+        'map_url': f"/api/visualize/maps/{result['map_file']}",
+        'mst_edges': mst_optimizer.get_mst_for_visualization(),
+        'total_distance': total_distance,
         'hub_count': result['hub_count']
     }), 200
 

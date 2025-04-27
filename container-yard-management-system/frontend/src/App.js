@@ -12,9 +12,11 @@ import Profile from './components/Profile';
 import MajorHubs from './components/MajorHubs';
 import RouteVisualizer from './components/RouteVisualizer';
 import RouteOptimizationPage from './components/RouteOptimizationPage';
+// Keeping imports but components will be hidden from navigation
 import Inventories from './components/Inventories';
 import Containers from './components/Containers';
 import DashboardContainers from './components/DashboardContainers';
+import NetworkDashboard from './components/NetworkDashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 import Header from './components/Header';
 
@@ -102,6 +104,7 @@ function App() {
             }
           />
 
+          {/* Commented out the Inventory route to hide it from navigation
           <Route
             path="/inventory"
             element={
@@ -115,7 +118,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          */}
 
+          {/* Commented out the Containers route to hide it from navigation
           <Route
             path="/containers"
             element={
@@ -129,7 +134,9 @@ function App() {
               </ProtectedRoute>
             }
           />
+          */}
 
+          {/* Commented out the DashboardContainers route to hide it from navigation  
           <Route
             path="/dashboard-containers"
             element={
@@ -143,6 +150,23 @@ function App() {
               </ProtectedRoute>
             }
           />
+          */}
+
+          {/* Commented out the Network Dashboard route to hide it from navigation
+          <Route
+            path="/network"
+            element={
+              <ProtectedRoute>
+                <div className="app-container dockshift-theme">
+                  <Header />
+                  <div className="main-content-container">
+                    <NetworkDashboard />
+                  </div>
+                </div>
+              </ProtectedRoute>
+            }
+          />
+          */}
 
           {/* Fallback route - redirect to home */}
           <Route path="*" element={<Home />} />

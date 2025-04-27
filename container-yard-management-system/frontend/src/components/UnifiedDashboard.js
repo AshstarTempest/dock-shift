@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/App.css';
-import { Alert } from 'react-bootstrap';
+import { Alert, Card, Badge, Spinner } from 'react-bootstrap';
 
 // Import our custom components
 import MapPicker from './MapPicker';
 import CreateContainerModal from './CreateContainerModal';
+import NetworkVisualizer from './NetworkVisualizer';
+import MSTVisualizer from './MSTVisualizer';
+import './NetworkDashboard.css'; // Import network dashboard styles
 
 const UnifiedDashboard = () => {
   const navigate = useNavigate();
@@ -19,6 +22,16 @@ const UnifiedDashboard = () => {
   const [activeTab, setActiveTab] = useState('containers');
   const [mstData, setMstData] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [networkMetrics, setNetworkMetrics] = useState({
+    nodes: 0,
+    connections: 0,
+    totalDistance: 0,
+    efficiency: 0,
+  });
+  const [mapUrl, setMapUrl] = useState(null);
+  const [networkVisualizationTab, setNetworkVisualizationTab] =
+    useState('interactive');
 
   // Fetch required data on component mount
   useEffect(() => {
@@ -184,12 +197,49 @@ const UnifiedDashboard = () => {
   // Fetch MST data for visualization
   const fetchMSTData = async () => {
     try {
-      const response = await axios.get('/api/logistics/mst');
+      setLoading(true);
+      // First try to fetch from our new dedicated endpoint
+      const response = await axios
+        .get('http://localhost:5000/api/visualize/mst', {
+          withCredentials: true,
+        })
+        .catch(() => {
+          // Fall back to the old endpoint if new one fails
+          return axios.get('/api/logistics/mst');
+        });
+
       if (response.data?.success) {
-        setMstData(response.data.mst);
-      } else {
-        // Mock MST data for development
+        // Handle data from new endpoint
+        const data = response.data;
+
         setMstData({
+          mst: data.mst_edges,
+          totalDistance: data.total_distance,
+          edgeCount: data.mst_edges?.length || 0,
+          hubCount: data.hub_count || 0,
+        });
+
+        // Set map URL if available
+        if (data.map_url) {
+          setMapUrl(data.map_url);
+        }
+
+        // Update network metrics
+        setNetworkMetrics({
+          nodes: data.hub_count || 0,
+          connections: data.mst_edges?.length || 0,
+          totalDistance: parseFloat(data.total_distance?.toFixed(2)) || 0,
+          // Calculate an efficiency score
+          efficiency: Math.min(
+            100,
+            Math.round(
+              (100 * (data.hub_count - 1)) / data.mst_edges?.length || 0
+            )
+          ),
+        });
+      } else {
+        // Handle old endpoint data or use mock data
+        const mockMST = {
           nodeCount: 12,
           edgeCount: 11,
           totalDistance: 2680.42,
@@ -206,10 +256,29 @@ const UnifiedDashboard = () => {
             { from: 'kolkata_hub', to: 'chennai_hub', distance: 1369 },
             { from: 'chennai_hub', to: 'bangalore_hub', distance: 335 },
           ],
+        };
+
+        setMstData(mockMST);
+
+        // Update metrics with mock data
+        setNetworkMetrics({
+          nodes: mockMST.nodeCount || 0,
+          connections: mockMST.edgeCount || 0,
+          totalDistance: parseFloat(mockMST.totalDistance?.toFixed(2)) || 0,
+          efficiency: 94.8, // Mock efficiency score
         });
       }
     } catch (error) {
       console.error('Error fetching MST data:', error);
+      // Set mock data as fallback
+      setNetworkMetrics({
+        nodes: 12,
+        connections: 11,
+        totalDistance: 2680.42,
+        efficiency: 94.8,
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -483,57 +552,104 @@ const UnifiedDashboard = () => {
             </div>
           </div>
         ))}
+
+        {/* Placeholder for empty state */}
+        {containers.length === 0 && (
+          <div className="empty-state">
+            <i className="fas fa-box-open fa-3x"></i>
+            <p>
+              No containers found. Click "Create New Container" to add your
+              first container.
+            </p>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Render MST visualization tab
+  // Render MST visualization tab - enhanced version
   const renderMSTVisualizer = () => {
     return (
       <div className="mst-visualizer-container">
+        {/* Network stats cards */}
         <div className="dashboard-summary">
           <div className="stats-container">
             <div className="stat-card">
               <div className="stat-card-inner">
                 <div className="stat-icon">
-                  <i className="fas fa-project-diagram"></i>
+                  <i className="fas fa-network-wired"></i>
                 </div>
                 <div className="stat-content">
                   <h3>Network Nodes</h3>
                   <div className="stat-value">
-                    {mstData ? mstData.nodeCount || 'N/A' : 'Loading...'}
+                    {loading ? (
+                      <div className="placeholder-glow">
+                        <span className="placeholder col-8"></span>
+                      </div>
+                    ) : (
+                      networkMetrics.nodes
+                    )}
                   </div>
+                  {!loading && (
+                    <Badge bg="success">
+                      <i className="fas fa-check me-1"></i> Optimal
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
-            <div className="stat-card">
-              <div className="stat-card-inner">
-                <div className="stat-icon">
-                  <i className="fas fa-exchange-alt"></i>
-                </div>
-                <div className="stat-content">
-                  <h3>Optimized Connections</h3>
-                  <div className="stat-value">
-                    {mstData ? mstData.edgeCount || 'N/A' : 'Loading...'}
-                  </div>
-                </div>
-              </div>
-            </div>
+
             <div className="stat-card">
               <div className="stat-card-inner">
                 <div className="stat-icon">
                   <i className="fas fa-route"></i>
                 </div>
                 <div className="stat-content">
-                  <h3>Total Distance</h3>
+                  <h3>Optimized Connections</h3>
                   <div className="stat-value">
-                    {mstData
-                      ? `${mstData.totalDistance?.toFixed(2)} km` || 'N/A'
-                      : 'Loading...'}
+                    {loading ? (
+                      <div className="placeholder-glow">
+                        <span className="placeholder col-8"></span>
+                      </div>
+                    ) : (
+                      networkMetrics.connections
+                    )}
                   </div>
+                  {!loading && (
+                    <Badge bg="success">
+                      <i className="fas fa-chart-line me-1"></i> Minimized
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
+
+            <div className="stat-card">
+              <div className="stat-card-inner">
+                <div className="stat-icon">
+                  <i className="fas fa-road"></i>
+                </div>
+                <div className="stat-content">
+                  <h3>Total Distance</h3>
+                  <div className="stat-value">
+                    {loading ? (
+                      <div className="placeholder-glow">
+                        <span className="placeholder col-8"></span>
+                      </div>
+                    ) : (
+                      `${networkMetrics.totalDistance} km`
+                    )}
+                  </div>
+                  {!loading && (
+                    <Badge bg="info">
+                      <i className="fas fa-compress-arrows-alt me-1"></i>{' '}
+                      Optimized
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
             <div className="stat-card">
               <div className="stat-card-inner">
                 <div className="stat-icon">
@@ -542,23 +658,127 @@ const UnifiedDashboard = () => {
                 <div className="stat-content">
                   <h3>Efficiency Score</h3>
                   <div className="stat-value">
-                    {mstData ? '94.8%' : 'Loading...'}
+                    {loading ? (
+                      <div className="placeholder-glow">
+                        <span className="placeholder col-8"></span>
+                      </div>
+                    ) : (
+                      `${networkMetrics.efficiency}%`
+                    )}
                   </div>
+                  {!loading && (
+                    <Badge bg="warning">
+                      <i className="fas fa-bolt me-1"></i> High Performance
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="recent-containers">
-          <h2>
-            <i className="fas fa-network-wired"></i> Network Optimization
-            Visualization
-          </h2>
-          <div className="mst-canvas-container">
-            <canvas id="mst-canvas" className="mst-canvas"></canvas>
-          </div>
-        </div>
+        <Card className="shadow-sm border-0 mt-4">
+          <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">
+              <i className="fas fa-project-diagram me-2"></i>
+              Network Visualization
+            </h5>
+            <div>
+              <button
+                className={`btn btn-sm ${
+                  networkVisualizationTab === 'interactive'
+                    ? 'btn-light'
+                    : 'btn-outline-light'
+                } me-2`}
+                onClick={() => setNetworkVisualizationTab('interactive')}
+              >
+                <i className="fas fa-globe me-1"></i> Interactive
+              </button>
+              <button
+                className={`btn btn-sm ${
+                  networkVisualizationTab === 'python'
+                    ? 'btn-light'
+                    : 'btn-outline-light'
+                }`}
+                onClick={() => setNetworkVisualizationTab('python')}
+              >
+                <i className="fas fa-map me-1"></i> Python MST
+              </button>
+            </div>
+          </Card.Header>
+
+          <Card.Body>
+            <div
+              style={{ height: '600px', position: 'relative' }}
+              className="border rounded bg-light"
+            >
+              {loading ? (
+                <div className="text-center py-5">
+                  <Spinner animation="border" variant="primary" />
+                  <p className="mt-2">Loading network data...</p>
+                </div>
+              ) : networkVisualizationTab === 'interactive' ? (
+                <NetworkVisualizer />
+              ) : mapUrl ? (
+                <div className="embed-responsive" style={{ height: '100%' }}>
+                  <iframe
+                    src={mapUrl}
+                    className="embed-responsive-item"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                    }}
+                    title="MST Network Map"
+                  ></iframe>
+                </div>
+              ) : (
+                <MSTVisualizer mstData={mstData} selectedPath={[]} />
+              )}
+            </div>
+          </Card.Body>
+        </Card>
+
+        <Card className="shadow-sm border-0 mt-4">
+          <Card.Header className="bg-light">
+            <h5 className="mb-0">Network Optimization Insights</h5>
+          </Card.Header>
+          <Card.Body>
+            <div className="row">
+              <div className="col-md-6">
+                <h5>Minimum Spanning Tree Analysis</h5>
+                <p>
+                  Your network consists of {networkMetrics.nodes} connected hubs
+                  with a total optimal distance of{' '}
+                  {networkMetrics.totalDistance} km.
+                </p>
+                <p>
+                  The MST algorithm has found the most efficient way to connect
+                  all hubs using only {networkMetrics.connections} connections,
+                  eliminating redundant routes.
+                </p>
+              </div>
+              <div className="col-md-6">
+                <h5>Logistics Optimization Recommendations</h5>
+                <ul>
+                  <li>
+                    Consider establishing regional distribution centers at major
+                    hub junctions
+                  </li>
+                  <li>
+                    The network diameter is approximately{' '}
+                    {Math.ceil(Math.sqrt(networkMetrics.nodes) * 2)} hops
+                  </li>
+                  <li>Focus cargo consolidation at hubs with 3+ connections</li>
+                  <li>
+                    Consider adding redundant routes for critical high-traffic
+                    paths
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </Card.Body>
+        </Card>
       </div>
     );
   };

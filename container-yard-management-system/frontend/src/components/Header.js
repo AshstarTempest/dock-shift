@@ -69,7 +69,7 @@ const Header = () => {
             <Link to="/" className="logo-text-link">
               <span className="brand-title">DockShift</span>
             </Link>
-            <span className="brand-tagline">Container Yard Management</span>
+            <span className="brand-tagline">Management System</span>
           </div>
         </div>
 
@@ -255,7 +255,7 @@ const Header = () => {
                         <rect x="14" y="14" width="7" height="7"></rect>
                         <rect x="3" y="14" width="7" height="7"></rect>
                       </svg>
-                      Dashboard
+                      Management System
                     </Link>
                     <Link to="/profile" className="user-dropdown-item">
                       <svg
@@ -288,7 +288,7 @@ const Header = () => {
                       >
                         <circle cx="12" cy="12" r="10"></circle>
                         <line x1="2" y1="12" x2="22" y2="12"></line>
-                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10a15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
                       </svg>
                       Major Hubs
                     </Link>
@@ -315,66 +315,6 @@ const Header = () => {
                         ></rect>
                       </svg>
                       Route Visualizer
-                    </Link>
-                    <Link to="/inventory" className="user-dropdown-item">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20 3H4a1 1 0 00-1 1v16a1 1 0 001 1h16a1 1 0 001-1V4a1 1 0 00-1-1z"></path>
-                        <path d="M16 10v-2a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"></path>
-                        <path d="M8 14h.01"></path>
-                        <path d="M12 14h.01"></path>
-                        <path d="M16 14h.01"></path>
-                      </svg>
-                      Inventory
-                    </Link>
-                    <Link to="/containers" className="user-dropdown-item">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="2" y="4" width="20" height="16" rx="2"></rect>
-                        <path d="M2 8h20"></path>
-                        <path d="M8 4v4"></path>
-                        <path d="M16 4v4"></path>
-                      </svg>
-                      Containers
-                    </Link>
-                    <Link
-                      to="/dashboard-containers"
-                      className="user-dropdown-item"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-                        <path d="M3 9h18"></path>
-                        <path d="M9 21V9"></path>
-                      </svg>
-                      Dashboard Containers
                     </Link>
                     <div className="dropdown-divider"></div>
                     <button

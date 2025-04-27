@@ -70,7 +70,7 @@ const Inventories = () => {
       }
 
       const data = await response.json();
-      setInventory(data);
+      setInventory(Array.isArray(data) ? data : []); // 🛠️ Fixed here
       setError(null);
     } catch (err) {
       setError(`Failed to load inventory: ${err.message}`);

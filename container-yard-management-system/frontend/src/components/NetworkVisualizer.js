@@ -34,17 +34,6 @@ class UnionFind {
 }
 
 const NetworkVisualizer = () => {
-  // ASCII banner for Enterprise Logistics
-  const asciiBanner = `
-███████╗███████╗███████╗██████╗ ██╗      ██████╗  ██████╗ 
-██╔════╝██╔════╝██╔════╝██╔══██╗██║     ██╔═══██╗██╔════╝ 
-███████╗███████╗█████╗  ██████╔╝██║     ██║   ██║██║  ███╗
-╚════██║╚════██║██╔══╝  ██╔═══╝ ██║     ██║   ██║██║   ██║
-███████║███████║███████╗██║     ███████╗╚██████╔╝╚██████╔╝
-╚══════╝╚══════╝╚══════╝╚═╝     ╚══════╝ ╚═════╝  ╚═════╝ 
-                                                       
-Enterprise Logistics Management System with Emotional AI`;
-
   const [hubs, setHubs] = useState([]);
   const [mst, setMst] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +44,13 @@ Enterprise Logistics Management System with Emotional AI`;
   const [endHub, setEndHub] = useState('');
   const [totalDistance, setTotalDistance] = useState(0);
   const [cargoStatus, setCargoStatus] = useState({});
+  const [networkMetrics, setNetworkMetrics] = useState({
+    hubCount: 0,
+    majorHubs: 0,
+    subHubs: 0,
+    connections: 0,
+    density: 0,
+  });
 
   const svgRef = useRef(null);
   const tooltipRef = useRef(null);
@@ -152,7 +148,7 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
   // Load hubs from config
   const loadHubs = useCallback(() => {
     try {
-      console.log('\n🔍 Loading hub network...');
+      console.log('Loading hub network data...');
       const lines = CONFIG.HUB_DATA.split('\n');
       const header = lines[0].split(',');
       const hubsList = [];
@@ -180,17 +176,30 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
         hubsList.push(hub);
       }
 
-      console.log(`✅ Successfully loaded ${hubsList.length} hubs`);
+      console.log(`Successfully loaded ${hubsList.length} hubs`);
+
+      // Calculate network metrics
+      const majorHubs = hubsList.filter((h) => h.type === 'major').length;
+      const subHubs = hubsList.filter((h) => h.type === 'sub').length;
+
+      setNetworkMetrics({
+        hubCount: hubsList.length,
+        majorHubs,
+        subHubs,
+        connections: 0, // Will update after MST calculation
+        density: 0, // Will update after MST calculation
+      });
+
       return hubsList;
     } catch (error) {
-      console.error('❌ Error loading hubs:', error);
+      console.error('Error loading hubs:', error);
       throw new Error('Failed to load hub network data');
     }
   }, [CONFIG]);
 
   // Build Minimum Spanning Tree (MST)
   const buildMST = useCallback((hubsList) => {
-    console.log('\n🔨 Building optimal network (MST)...');
+    console.log('Building optimal network (MST)...');
     const edges = [];
 
     // Calculate distances between all pairs of hubs
@@ -225,9 +234,17 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
       }
     }
 
-    console.log(`✅ MST Construction Complete`);
-    console.log(`   Total Connections: ${mstEdges.length}`);
-    console.log(`   Network Distance: ${totalDist.toFixed(2)}km`);
+    console.log(`MST Construction Complete`);
+    console.log(`Total Connections: ${mstEdges.length}`);
+    console.log(`Network Distance: ${totalDist.toFixed(2)}km`);
+
+    // Update network metrics
+    setNetworkMetrics((prev) => ({
+      ...prev,
+      connections: mstEdges.length,
+      density:
+        (2 * mstEdges.length) / (hubsList.length * (hubsList.length - 1)),
+    }));
 
     return { mstEdges, totalDist };
   }, []);
@@ -308,7 +325,7 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
       newStatus[hubCode][mode][containerId] += fillPct;
 
       console.log(
-        `\n📦 Added ${fillPct * 100}% to ${containerId} (${mode}) at ${hubCode}`
+        `Added ${fillPct * 100}% to ${containerId} (${mode}) at ${hubCode}`
       );
 
       return newStatus;
@@ -368,11 +385,11 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
     const expressETA = totalDist / CONFIG.SPEED_PROFILE.express;
     const standardETA = totalDist / CONFIG.SPEED_PROFILE.standard;
 
-    console.log(`\n🗺️ Route from ${startHub} to ${endHub}`);
+    console.log(`Route from ${startHub} to ${endHub}`);
     console.log(`➔ ${path.join(' → ')}`);
-    console.log(`📏 Total Distance: ${totalDist.toFixed(2)}km`);
-    console.log(`⏱️ Express ETA: ${expressETA.toFixed(1)} hours`);
-    console.log(`⏱️ Standard ETA: ${standardETA.toFixed(1)} hours`);
+    console.log(`Total Distance: ${totalDist.toFixed(2)}km`);
+    console.log(`Express ETA: ${expressETA.toFixed(1)} hours`);
+    console.log(`Standard ETA: ${standardETA.toFixed(1)} hours`);
 
     // Simulate adding some cargo
     const containerId = `CTN-${startHub}-${new Date()
@@ -619,26 +636,20 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
 
   return (
     <div className="network-visualizer">
-      <div className="enterprise-banner">
-        <pre className="mb-0" style={{ overflow: 'auto', whiteSpace: 'pre' }}>
-          {asciiBanner}
-        </pre>
-      </div>
-
       <Card className="mb-4 shadow-sm border-0">
-        <Card.Header className="text-white d-flex justify-content-between align-items-center">
+        <Card.Header className="bg-dark text-white d-flex justify-content-between align-items-center">
           <div>
             <h5 className="mb-0">
               <i className="fas fa-project-diagram me-2"></i>
-              Enterprise Logistics Network Visualization
+              Logistics Network Visualization
             </h5>
           </div>
           <div>
-            <Badge bg="light" text="danger" className="me-2">
-              {hubs.filter((h) => h.type === 'major').length} Major Hubs
+            <Badge bg="light" text="dark" className="me-2">
+              {networkMetrics.majorHubs} Major Hubs
             </Badge>
-            <Badge bg="light" text="danger">
-              {hubs.filter((h) => h.type === 'sub').length} Sub Hubs
+            <Badge bg="light" text="dark">
+              {networkMetrics.subHubs} Sub Hubs
             </Badge>
           </div>
         </Card.Header>
@@ -852,6 +863,48 @@ Maharashtra,Navi Mumbai,19.033618,73.035662,sub`,
               as the destination. Hover over hubs and routes for more details.
             </small>
           </div>
+        </Card.Body>
+      </Card>
+
+      {/* Network analytics */}
+      <Card className="shadow-sm border-0">
+        <Card.Header className="bg-light">
+          <h5 className="mb-0">Network Optimization Insights</h5>
+        </Card.Header>
+        <Card.Body>
+          <Row>
+            <Col md={6}>
+              <h6>Minimum Spanning Tree Analysis</h6>
+              <p>
+                Your network consists of {networkMetrics.hubCount} connected
+                hubs with a total optimal distance of {totalDistance.toFixed(2)}{' '}
+                km.
+              </p>
+              <p>
+                The MST algorithm has found the most efficient way to connect
+                all hubs using only {networkMetrics.connections} connections,
+                eliminating redundant routes.
+              </p>
+            </Col>
+            <Col md={6}>
+              <h6>Logistics Optimization Recommendations</h6>
+              <ul className="mb-0">
+                <li>
+                  Consider establishing regional distribution centers at major
+                  hub junctions
+                </li>
+                <li>
+                  The network diameter is approximately{' '}
+                  {Math.ceil(Math.sqrt(networkMetrics.hubCount) * 2)} hops
+                </li>
+                <li>Focus cargo consolidation at hubs with 3+ connections</li>
+                <li>
+                  Consider adding redundant routes for critical high-traffic
+                  paths
+                </li>
+              </ul>
+            </Col>
+          </Row>
         </Card.Body>
       </Card>
     </div>
